@@ -1,13 +1,12 @@
 use iced::Element;
-use iced::widget::text_input;
+use iced::widget::{text, text_input};
 use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct DecimalInput {
     field: String,
-    placeholder: String,
+    label: String,
     value: f32,
-    error: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -16,27 +15,28 @@ pub enum Message {
 }
 
 impl DecimalInput {
-    pub fn new(placeholder: impl AsRef<str>) -> Self {
+    pub fn new(label: impl AsRef<str>, default_value: f32) -> Self {
         Self {
-            field: String::new(),
-            placeholder: placeholder.as_ref().to_string(),
-            value: 0.0,
-            error: None,
+            label: label.as_ref().to_string(),
+            field: default_value.to_string(),
+            value:default_value,
         }
     }
     pub fn value(&self) -> f32 {
         self.value
     }
     fn handle_change(&mut self, text: String) {
+        for char in text.chars() {
+            if !char.is_numeric() && char != '.' {
+                return;
+            }
+        }
+
         self.field = text;
-        match self.field.parse::<f32>() {
-            Ok(f) => {
-                self.error = None;
-                self.value = f;
-            }
-            Err(e) => {
-                self.error = Some(e.to_string());
-            }
+        
+        if let Ok(number) = self.field.parse::<f32>() {
+            self.value = number;
+            
         }
     }
     
@@ -46,18 +46,10 @@ impl DecimalInput {
         }
     }
     pub fn view(&self) -> Element<Message> {
-        let mut column = iced::widget::column![
-            text_input(&self.placeholder, &self.field).on_input(Message::Change),
-        ];
-        if self.error.is_some() {
-            column = column.push(iced::widget::Text::new(self.error.as_ref().unwrap()));
-        }
-        column.into()
-    }
-    
-    pub fn set_value(mut self, value: f32) -> Self {
-        self.value = value;
-        self
+        iced::widget::row![
+            text(&self.label),
+            text_input(&self.value.to_string(), &self.field).on_input(Message::Change),
+        ].into()
     }
 }
 
@@ -65,9 +57,8 @@ impl Default for DecimalInput {
     fn default() -> Self {
         Self {
             field: String::new(),
-            placeholder: String::new(),
+            label: String::new(),
             value: 0.0,
-            error: None,
         }
     }
 }
