@@ -1,11 +1,11 @@
-mod type_;
+pub mod type_;
 
 use iced::Element;
 use iced::widget::{container, pick_list, row, text};
 use iced_aw::number_input;
 use serde::{Deserialize, Serialize};
 use strum::VariantArray;
-use crate::{HEADER_SIZE, RULE_HEIGHT};
+use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::admission::type_::Type_;
 use crate::as_description::AsDescription;
 use crate::as_transaction_record::AsTransactionRecord;
@@ -14,9 +14,9 @@ use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Admission {
-    kind: Option<Type_>,
-    payment_method: Option<PaymentMethod>,
-    quantity: u16,
+    pub kind: Option<Type_>,
+    pub payment_method: Option<PaymentMethod>,
+    pub quantity: u16,
 }
 
 #[derive(Debug, Clone)]
@@ -27,7 +27,7 @@ pub enum Message {
 }
 
 impl Admission {
-    fn needs_payment(&self) -> bool {
+    pub fn needs_payment(&self) -> bool {
         let Some(admission_type) = self.kind.as_ref() else {
             return false;
         };
@@ -58,11 +58,19 @@ impl Admission {
         }
         
         container(
-            column.push(row![text("Quantity: "), number_input(&self.quantity, 1..=u16::MAX, Message::QuantitySet)])
+            column.push(row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::QuantitySet)].spacing(RULE_HEIGHT)),
         ).into()
     }
     
-    fn cost(&self) -> f32 {
+    pub fn matches_admission_type(&self, ty: Type_) -> bool {
+        let Some(self_type) = self.kind.as_ref() else {
+            return false;
+        };
+        
+        *self_type == ty
+    }
+
+    pub fn cost(&self) -> f32 {
         self.quantity as f32 * self.kind.map(|kind| kind.cost()).unwrap_or(0.0)
     }
 }
@@ -81,12 +89,12 @@ impl AsTransactionRecord for Admission {
     fn as_transaction_record(&self) -> TransactionRecord {
         assert!(self.is_valid());
         TransactionRecord::new(
-            TransactionKind::Admission, 
+            TransactionKind::Admission,
             self.kind.map(|x| x.as_description().to_string()).unwrap_or(String::from("ERROR: MISSING ADMISSION KIND")),
             self.quantity,
             self.cost()
         )
-        
+
     }
 
     fn is_valid(&self) -> bool {

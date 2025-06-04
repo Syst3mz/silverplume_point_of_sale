@@ -14,7 +14,7 @@ mod sale_screen;
 mod database;
 
 pub const HEADER_SIZE: u16 = 32;
-pub const TEXT_SIZE: u16 = 16;
+pub const TEXT_SIZE: u16 = 18;
 pub const RULE_HEIGHT: u16 = 8;
 
 fn main() -> iced::Result {

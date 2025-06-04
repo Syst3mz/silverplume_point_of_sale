@@ -50,7 +50,7 @@ impl SaleScreen {
                     self.donation.view().map(|x| Message::Donation(x)),
                     button("Add Donation").on_press_maybe(self.donation.is_valid().then(|| Message::AddDonation)),
                 ].spacing(RULE_HEIGHT).padding(RULE_HEIGHT),
-            ].spacing(RULE_HEIGHT),
+            ].spacing(RULE_HEIGHT).padding(RULE_HEIGHT),
             row![
                 iced::widget::column![
                     self.membership.view().map(|x| Message::Membership(x)),
@@ -60,7 +60,7 @@ impl SaleScreen {
                     self.gift_shop_sale.view().map(|x| Message::GiftShopSale(x)),
                     button("Add Sale").on_press_maybe(self.gift_shop_sale.is_valid().then(|| Message::AddGiftShopSale)),
                 ].spacing(RULE_HEIGHT).padding(RULE_HEIGHT),
-            ].spacing(RULE_HEIGHT)
+            ].spacing(RULE_HEIGHT).padding(RULE_HEIGHT),
         ].spacing(RULE_HEIGHT).into()
     }
 

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, TimeZone, Timelike};
 use serde::{Deserialize, Serialize};
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
@@ -36,7 +36,31 @@ pub mod rfc3339 {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Hour {
+    #[serde(rename = "11am-12pm")]
+    ElevenToTwelve,
+    #[serde(rename = "12pm-1pm")]
+    TwelveToOne,
+    #[serde(rename = "1pm-2pm")]
+    OneToTwo,
+    #[serde(rename = "2pm-3pm")]
+    TwoToThree,
+    #[serde(rename = "3pm-4pm")]
+    ThreeToFour,
+}
 
+impl<Tz: TimeZone> From<DateTime<Tz>> for Hour {
+    fn from(dt: DateTime<Tz>) -> Self {
+        match dt.hour() { 
+            10 => Hour::ElevenToTwelve,
+            11 => Hour::TwelveToOne,
+            12 => Hour::OneToTwo,
+            13 => Hour::TwoToThree,
+            _ => Hour::ThreeToFour,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionRecord {
@@ -47,16 +71,21 @@ pub struct TransactionRecord {
     pub description: String,
     pub quantity: u16,
     pub amount: f32,
+    pub hour: Hour
 }
 
 impl TransactionRecord {
     pub fn new(kind: TransactionKind, description: String, quantity: u16, amount: f32) -> Self {
+        let now = Local::now();
+        let hour = Hour::from(now);
         Self {
-            time: Local::now(),
+            time: now,
             kind,
             description,
             quantity,
             amount,
+            hour
         }
     }
+    
 }

@@ -1,6 +1,7 @@
 use iced::Element;
 use iced::widget::{text, text_input};
 use serde::{Deserialize, Serialize};
+use crate::{RULE_HEIGHT, TEXT_SIZE};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct DecimalInput {
@@ -47,9 +48,9 @@ impl DecimalInput {
     }
     pub fn view(&self) -> Element<Message> {
         iced::widget::row![
-            text(&self.label),
+            text(format!("{}: ", self.label)).size(TEXT_SIZE),
             text_input(&self.value.to_string(), &self.field).on_input(Message::Change),
-        ].into()
+        ].spacing(RULE_HEIGHT).into()
     }
 }
 

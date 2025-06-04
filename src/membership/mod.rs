@@ -1,14 +1,14 @@
 pub mod kind;
 
 use iced::Element;
-use iced::widget::pick_list;
+use iced::widget::{pick_list, row, text};
 use iced_aw::number_input;
 use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 use crate::as_transaction_record::AsTransactionRecord;
 use crate::membership::kind::Kind;
 use crate::payment_method::PaymentMethod;
-use crate::{HEADER_SIZE, RULE_HEIGHT};
+use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
@@ -16,7 +16,7 @@ pub struct Membership {
     #[serde(rename = "type")]
     kind: Option<Kind>,
     payment_method: Option<PaymentMethod>,
-    quantity: u16
+    pub quantity: u16
 }
 
 #[derive(Debug, Clone)]
@@ -36,12 +36,16 @@ impl Membership {
     
     pub fn view(&self) -> Element<Message> {
         iced::widget::column![
-            iced::widget::text("Membership").size(HEADER_SIZE),
+            iced::widget::text("Memberships").size(HEADER_SIZE),
             iced::widget::horizontal_rule(RULE_HEIGHT),
             pick_list(Kind::VARIANTS, self.kind, Message::Kind).placeholder("Select Membership Type"),
             pick_list(PaymentMethod::VARIANTS, self.payment_method, Message::PaymentMethod).placeholder("Select Payment Method"),
-            number_input(&self.quantity, 1..=u16::MAX, Message::Quantity,)
+            row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::Quantity,)].spacing(RULE_HEIGHT),
         ].spacing(RULE_HEIGHT).into()
+    }
+    
+    pub fn matches_type(&self, kind: Kind) -> bool {
+        self.kind == Some(kind)
     }
 }
 

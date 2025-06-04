@@ -1,5 +1,6 @@
-use chrono::Datelike;
-use std::{fs, thread};
+use chrono::{Datelike, Utc};
+use std::fs;
+use std::io::ErrorKind;
 use std::path::Path;
 use chrono::{DateTime, Duration, Local, TimeDelta};
 use serde::Serialize;
@@ -12,15 +13,19 @@ use crate::membership::Membership;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 mod file_prefixes {
-    pub const TRANSACTIONS: &str = "Transactions";
-    pub const ADMISSIONS: &str = "Admissions";
-    pub const DONATIONS: &str = "Donations";
-    pub const MEMBERSHIPS: &str = "Memberships";
-    pub const GIFT_SHOP_SALES: &str = "Gift Shop Sales";
-    pub const PREFIXES: [&str; 5] = [TRANSACTIONS, ADMISSIONS, DONATIONS, MEMBERSHIPS, GIFT_SHOP_SALES];
+    pub const TRANSACTIONS: &str = "data/Transactions";
+    pub const ADMISSIONS: &str = "data/Admissions";
+    pub const DONATIONS: &str = "data/Donations";
+    pub const MEMBERSHIPS: &str = "data/Memberships";
+    pub const GIFT_SHOP_SALES: &str = "data/Gift Shop Sales";
+    pub const DATA_FILE_PREFIXES: [&str; 5] = [TRANSACTIONS, ADMISSIONS, DONATIONS, MEMBERSHIPS, GIFT_SHOP_SALES];
 }
+
+const DATABASE_LOCK_FILE: &str = "database.lock";
+
 /// This is really really not a DB
 pub struct Database {
+    created: DateTime<Utc>,
     pub admissions: Vec<Admission>,
     pub donations: Vec<Donation>,
     pub memberships: Vec<Membership>,
@@ -50,18 +55,6 @@ fn write_vec<T: Serialize>(to_write: &[T], file_prefix: impl AsRef<Path>) {
     let _ = wtr.flush();
 }
 
-fn age_of_file(filename: impl AsRef<Path>) -> Option<TimeDelta> {
-    let now = Local::now();
-    let file_created = DateTime::<Local>::from(fs::metadata(filename).ok()?.created().ok()?);
-    Some(now - file_created)
-}
-
-fn age_of_oldest_file() -> Option<TimeDelta> {
-    file_prefixes::PREFIXES.iter()
-        .filter_map(|x| age_of_file(append_str(x, DOT_CSV)))
-        .max_by(|a, b| a.num_days().cmp(&b.num_days()))
-}
-
 fn last_month() -> String {
     let now = Local::now().date_naive();
     let last_month = if now.month() == 1 {
@@ -72,19 +65,6 @@ fn last_month() -> String {
     };
     
     format!("{}_{}", last_month.format("%B"), now.year())
-}
-
-fn rename_files() -> std::io::Result<()> {
-    let last_month = last_month();
-    for file_prefix in file_prefixes::PREFIXES.iter() {
-        let new_file_name = format!("{}_{}", file_prefix, last_month);
-        match fs::rename(append_str(file_prefix, DOT_CSV), append_str(new_file_name, DOT_CSV)) {
-            Ok(_) => { },
-            Err(e) => return Err(e),
-        }
-    }
-    
-    Ok(())
 }
 
 impl Database {
@@ -119,17 +99,66 @@ impl Database {
         Self::append_to_vec_and_write(&mut self.transactions, gift_shop_sale.as_transaction_record(), file_prefixes::TRANSACTIONS);
     }
     
+    fn write_created_time_to_disk(&self) -> std::io::Result<()> {
+        fs::write(DATABASE_LOCK_FILE, self.created.timestamp_millis().to_string())
+    }
+    
+    fn read_created_time_from_disk() -> std::io::Result<DateTime<Utc>> {
+        let timestamp = fs::read_to_string(DATABASE_LOCK_FILE)?;
+        let timestamp = timestamp.parse::<i64>().map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        DateTime::from_timestamp_millis(timestamp)
+            .ok_or(std::io::Error::new(ErrorKind::InvalidData, "invalid timestamp"))
+
+        
+    }
+    
     fn write_all_files(&self) {
+        self.write_created_time_to_disk().expect("Unable to write created time to disk.");
         write_vec(&self.admissions, append_str(file_prefixes::ADMISSIONS, DOT_CSV));
         write_vec(&self.donations, append_str(file_prefixes::DONATIONS, DOT_CSV));
         write_vec(&self.memberships, append_str(file_prefixes::MEMBERSHIPS, DOT_CSV));
         write_vec(&self.gift_shop_sales, append_str(file_prefixes::GIFT_SHOP_SALES, DOT_CSV));
         write_vec(&self.transactions, append_str(file_prefixes::TRANSACTIONS, DOT_CSV));
     }
+
+    fn lock_file_exists() -> bool {
+        fs::exists(DATABASE_LOCK_FILE).unwrap_or_else(|_| false)
+    }
+    
+    fn make_new_data_files() -> bool {
+        let Ok(creation_time) = Self::read_created_time_from_disk() else {return true};
+
+        #[cfg(debug_assertions)]
+        let max_age = TimeDelta::seconds(10);
+        #[cfg(not(debug_assertions))]
+        let max_age = TimeDelta::days(30);
+        
+        Utc::now() - creation_time > max_age
+    }
+}
+
+fn rename_files() {
+    let last_month = last_month();
+    for file_prefix in file_prefixes::DATA_FILE_PREFIXES.iter() {
+        let from = append_str(file_prefix, DOT_CSV);
+        let to = append_str(format!("{}_{}", file_prefix, last_month), DOT_CSV);
+        fs::rename(from, to).expect("Unable to rename data file");
+    }
+}
+
+fn create_data_dir() {
+    match fs::create_dir("data") {
+        Ok(_) => {}
+        Err(e) => match e.kind() {
+            ErrorKind::AlreadyExists => {}
+            _ => panic!("{}", e),
+        }
+    }
 }
 impl Default for Database {
     fn default() -> Self {
         let mut database = Self {
+            created: Utc::now(),
             admissions: vec![],
             donations: vec![],
             memberships: vec![],
@@ -137,33 +166,29 @@ impl Default for Database {
             transactions: vec![],
         };
         
-        if let Some(age) = age_of_oldest_file() {
-            #[cfg(debug_assertions)]
-            let max_age = TimeDelta::seconds(20);
-            #[cfg(not(debug_assertions))]
-            let max_age = TimeDelta::days(30);
-            
-            
-            if dbg!(age) < dbg!(max_age) {
-                database.admissions = read_vec(append_str(file_prefixes::ADMISSIONS, DOT_CSV));
-                database.donations = read_vec(append_str(file_prefixes::DONATIONS, DOT_CSV));
-                database.memberships = read_vec(append_str(file_prefixes::MEMBERSHIPS, DOT_CSV));
-                database.gift_shop_sales = read_vec(append_str(file_prefixes::GIFT_SHOP_SALES, DOT_CSV));
-                database.transactions = read_vec(append_str(file_prefixes::TRANSACTIONS, DOT_CSV));
-            } else {
-                println!("Making a new database since the last one was too old!");
-                rename_files().expect("Unable to rename files");
-                
-                // this is to let the OS actually commit the change...IDK if it's enough.
-                thread::sleep(std::time::Duration::from_millis(66));
-                database.write_all_files();
-            }
-        } else {
-            
+        if !Self::lock_file_exists() {
             println!("Making a brand new database since we have never been run here before");
+            create_data_dir();
             database.write_all_files();
+            return database;
         }
         
+        if Self::make_new_data_files() {
+            println!("Making new data files, its the start of a new month!");
+            rename_files();
+            database.created = Utc::now();
+            database.write_all_files();
+            return database
+        }
+        
+        println!("Reading data from data directory!");
+        // safe to unwrap b/c otherwise the program is fucked.
+        database.created = Self::read_created_time_from_disk().unwrap();
+        database.admissions = read_vec(append_str(file_prefixes::ADMISSIONS, DOT_CSV));
+        database.donations = read_vec(append_str(file_prefixes::DONATIONS, DOT_CSV));
+        database.memberships = read_vec(append_str(file_prefixes::MEMBERSHIPS, DOT_CSV));
+        database.gift_shop_sales = read_vec(append_str(file_prefixes::GIFT_SHOP_SALES, DOT_CSV));
+        database.transactions = read_vec(append_str(file_prefixes::TRANSACTIONS, DOT_CSV));
         database
     }
 }
