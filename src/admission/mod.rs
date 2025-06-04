@@ -9,13 +9,14 @@ use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::admission::type_::Type_;
 use crate::as_description::AsDescription;
 use crate::as_transaction_record::AsTransactionRecord;
+use crate::get_payment_method::GetPaymentMethod;
 use crate::payment_method::PaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Admission {
     pub kind: Option<Type_>,
-    pub payment_method: Option<PaymentMethod>,
+    payment_method: Option<PaymentMethod>,
     pub quantity: u16,
 }
 
@@ -70,7 +71,7 @@ impl Admission {
         *self_type == ty
     }
 
-    pub fn cost(&self) -> f32 {
+    pub fn compute_total_cost(&self) -> f32 {
         self.quantity as f32 * self.kind.map(|kind| kind.cost()).unwrap_or(0.0)
     }
 }
@@ -92,7 +93,7 @@ impl AsTransactionRecord for Admission {
             TransactionKind::Admission,
             self.kind.map(|x| x.as_description().to_string()).unwrap_or(String::from("ERROR: MISSING ADMISSION KIND")),
             self.quantity,
-            self.cost()
+            self.compute_total_cost()
         )
 
     }
@@ -100,5 +101,11 @@ impl AsTransactionRecord for Admission {
     fn is_valid(&self) -> bool {
         let payment_ok = if self.needs_payment() { self.payment_method.is_some() } else { true };
         self.kind.is_some() && payment_ok && self.quantity > 0
+    }
+}
+
+impl GetPaymentMethod for Admission {
+    fn get_payment_method(&self) -> Option<PaymentMethod> {
+        self.payment_method.clone()
     }
 }

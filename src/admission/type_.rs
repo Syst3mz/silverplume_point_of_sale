@@ -35,8 +35,8 @@ impl AsDescription for Type_ {
         match self {
             Type_::Adult => "Adult - $8.00",
             Type_::Senior => "Adult - $5.00",
-            Type_::ChildUnderThirteen => "Adult - $3.00",
-            Type_::ChildUnderSix => "Child (6-12) - Free",
+            Type_::ChildUnderThirteen => "Child (6-12) - $3.00",
+            Type_::ChildUnderSix => "Child (Under 6) - Free",
             Type_::PfspMember => "PFSP Member - Free"
         }
     }

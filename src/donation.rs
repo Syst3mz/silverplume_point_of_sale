@@ -6,11 +6,12 @@ use crate::as_transaction_record::AsTransactionRecord;
 use crate::payment_method::PaymentMethod;
 use crate::{HEADER_SIZE, RULE_HEIGHT};
 use crate::decimal_input::DecimalInput;
+use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Donation {
-    payment_method: Option<PaymentMethod>,
+    pub payment_method: Option<PaymentMethod>,
     price: DecimalInput,
 }
 
@@ -36,6 +37,10 @@ impl Donation {
             self.price.view().map(Message::Price),
         ].spacing(RULE_HEIGHT).into()
     }
+    
+    pub fn amount(&self) -> f32 {
+        self.price.value()
+    }
 }
 
 impl Default for Donation {
@@ -60,5 +65,11 @@ impl AsTransactionRecord for Donation {
 
     fn is_valid(&self) -> bool {
         self.payment_method.is_some()
+    }
+}
+
+impl GetPaymentMethod for Donation {
+    fn get_payment_method(&self) -> Option<PaymentMethod> {
+        self.payment_method.clone()
     }
 }

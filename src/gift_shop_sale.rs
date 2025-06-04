@@ -7,13 +7,14 @@ use crate::payment_method::PaymentMethod;
 use crate::decimal_input::DecimalInput;
 use crate::{HEADER_SIZE, RULE_HEIGHT};
 use crate::as_transaction_record::AsTransactionRecord;
+use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
 pub struct GiftShopSale {
     item_description: String,
     price: DecimalInput,
-    payment_method: Option<PaymentMethod>,
+    pub payment_method: Option<PaymentMethod>,
     quantity: u16,
     sales_tax: DecimalInput
 }
@@ -87,5 +88,11 @@ impl AsTransactionRecord for GiftShopSale {
 
     fn is_valid(&self) -> bool {
         self.payment_method.is_some()
+    }
+}
+
+impl GetPaymentMethod for GiftShopSale {
+    fn get_payment_method(&self) -> Option<PaymentMethod> {
+        self.payment_method.clone()
     }
 }

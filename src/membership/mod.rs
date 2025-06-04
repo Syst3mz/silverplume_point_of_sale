@@ -9,6 +9,7 @@ use crate::as_transaction_record::AsTransactionRecord;
 use crate::membership::kind::Kind;
 use crate::payment_method::PaymentMethod;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
+use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
@@ -47,6 +48,10 @@ impl Membership {
     pub fn matches_type(&self, kind: Kind) -> bool {
         self.kind == Some(kind)
     }
+    
+    pub fn compute_total_cost(&self) -> f32 {
+        self.quantity as f32 * self.kind.map(|x| x.price()).unwrap_or(-1.0)
+    }
 }
 
 impl Default for Membership {
@@ -68,11 +73,17 @@ impl AsTransactionRecord for Membership {
             self.kind.map(|x| x.to_string())
                 .unwrap_or(String::from("ERROR: MISSING MEMBERSHIP KIND")),
             self.quantity,
-            self.quantity as f32 * self.kind.map(|x| x.price()).unwrap_or(-1.0),
+            self.compute_total_cost()
         )
     }
 
     fn is_valid(&self) -> bool {
         self.kind.is_some() && self.payment_method.is_some() && self.quantity > 1
+    }
+}
+
+impl GetPaymentMethod for Membership {
+    fn get_payment_method(&self) -> Option<PaymentMethod> {
+        self.payment_method.clone()
     }
 }

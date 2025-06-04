@@ -4,6 +4,8 @@ use iced::Element;
 use iced::widget::{container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::database::Database;
+use crate::get_payment_method::GetPaymentMethod;
+use crate::payment_method::PaymentMethod;
 use crate::sale_screen::SaleScreen;
 use crate::transaction_record::{Hour, TransactionKind};
 
@@ -99,11 +101,11 @@ impl App {
             .sum::<u32>()
             .to_string()
     }
-    
+
     fn sum_transactions_of_kind(&self, transaction_kind: TransactionKind) -> String {
         format!("${:.2}", self.database.todays_transactions_of_kind(transaction_kind).map(|x| x.amount).sum::<f32>())
     }
-    
+
     fn sum_hourly_attendance(&self, hour: Hour) -> String {
         self.database
             .todays_transactions_of_kind(TransactionKind::Admission)
@@ -112,11 +114,24 @@ impl App {
             .sum::<u32>()
             .to_string()
     }
+
+    fn filter_by_payment_method<T: GetPaymentMethod>(from: &Vec<T>, payment_method: PaymentMethod) -> impl Iterator<Item=&T> {
+        from.iter().filter(move |x| x.get_payment_method().is_some() && x.get_payment_method().unwrap() == payment_method)
+    }
     
+    fn total_by_payment_method(&self, payment_method: PaymentMethod) -> String {
+        let admissions = Self::filter_by_payment_method(&self.database.admissions, payment_method).map(|x| x.compute_total_cost());
+        let donations = Self::filter_by_payment_method(&self.database.donations, payment_method).map(|x| x.amount());
+        let gift_shop_sales = Self::filter_by_payment_method(&self.database.gift_shop_sales, payment_method).map(|x| x.compute_total_cost());
+        let memberships = Self::filter_by_payment_method(&self.database.memberships, payment_method).map(|x| x.compute_total_cost());
+        format!("${:.2}", admissions.chain(donations.chain(gift_shop_sales.chain(memberships))).sum::<f32>())
+    }
+
     fn summary(&self) -> Element<Message> {
         type T = TransactionKind;
         type At = crate::admission::type_::Type_;
         type Mk = crate::membership::kind::Kind;
+        type Pm = PaymentMethod;
         iced::widget::column![
             self.summary_row("Daily Summary", [
                 ("Total Attendance", self.database.todays_transactions_of_kind(T::Admission).map(|x| x.quantity as u32).sum::<u32>().to_string()),
@@ -126,6 +141,19 @@ impl App {
                 ("Gift Shop Sales", self.sum_transactions_of_kind(T::GiftShopSale)),
                 ("Sales Tax Collected", format!("${:.2}", self.database.gift_shop_sales.iter().map(|x| x.compute_tax()).sum::<f32>())),
                 ("Total Daily Revenue", format!("${:.2}", self.database.todays_transactions().map(|x| x.amount).sum::<f32>())),
+            ]),
+            self.summary_row("Monthly Payments Breakdown", [
+                ("Cash - Admissions", format!("${:.2}", Self::filter_by_payment_method(&self.database.admissions, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
+                ("Credit Card - Admissions", format!("${:.2}", Self::filter_by_payment_method(&self.database.admissions, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>().to_string())),
+                ("Free - Admissions", self.database.admissions.iter().filter(|x| !x.needs_payment()).count().to_string()),
+                ("Cash - Donations", format!("${:.2}", Self::filter_by_payment_method(&self.database.donations, Pm::Cash).map(|x| x.amount()).sum::<f32>())),
+                ("Credit Card - Donations", format!("${:.2}", Self::filter_by_payment_method(&self.database.donations, Pm::CreditCard).map(|x| x.amount()).sum::<f32>())),
+                ("Cash - Memberships", format!("${:.2}", Self::filter_by_payment_method(&self.database.memberships, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
+                ("Credit Card - Memberships", format!("${:.2}", Self::filter_by_payment_method(&self.database.memberships, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>())),
+                ("Cash - Shop Sales", format!("${:.2}", Self::filter_by_payment_method(&self.database.gift_shop_sales, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
+                ("Credit Card - Shop Sales", format!("${:.2}", Self::filter_by_payment_method(&self.database.gift_shop_sales, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>())),
+                ("Total Cash", self.total_by_payment_method(PaymentMethod::Cash)),
+                ("Total Credit Card", self.total_by_payment_method(PaymentMethod::CreditCard)),
             ]),
             self.summary_row("Monthly Admission Breakdown", [
                 ("Adults", self.sum_admission_type(At::Adult)),
