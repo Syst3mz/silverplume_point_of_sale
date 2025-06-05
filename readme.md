@@ -13,7 +13,7 @@
 ## DO NOT WORK DIRECTLY ON FILES IN THE `data` DIRECTORY, YOU WILL CORRUPT IT. ALWAYS COPY THEM OUT FIRST.
 
 # Known Bugs
-- Metrics reads "-0.00" for a number of fields, this is a qurik of numerical storage, and isn't going to be fixed this version.
+- Metrics reads "-0.00" for a number of fields, this is a quirk of numerical storage, and isn't going to be fixed this version.
 
 # Improvements
 This really ought to be using a database backing like Sqlite which can run entirely on one PC...But doing so would 
