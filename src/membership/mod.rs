@@ -78,7 +78,7 @@ impl AsTransactionRecord for Membership {
     }
 
     fn is_valid(&self) -> bool {
-        self.kind.is_some() && self.payment_method.is_some() && self.quantity > 1
+        self.kind.is_some() && self.payment_method.is_some() && self.quantity >= 1
     }
 }
 
