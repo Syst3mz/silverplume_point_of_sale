@@ -135,19 +135,6 @@ impl Database {
         
         Utc::now() - creation_time > max_age
     }
-
-    /*pub fn admissions_with_payment_method(&self, method: PaymentMethod) -> impl Iterator<Item=&PaymentMethod> {
-        self.admissions.iter().filter(|x| x.payment_method.is_some()).filter(|x| x == method)
-    }
-    pub fn donations_with_payment_method(&self, method: PaymentMethod) -> impl Iterator<Item=&PaymentMethod> {
-        self.donations.iter().filter(|x| x.payment_method.is_some()).filter(|x| *x == method)
-    }
-    pub fn memberships_with_payment_method(&self, method: PaymentMethod) -> impl Iterator<Item=&PaymentMethod> {
-        self.memberships.iter().filter(|x| x.payment_method.is_some()).filter(|x| *x == method)
-    }
-    pub fn gift_shop_sales_with_payment_method(&self, method: PaymentMethod) -> impl Iterator<Item=&PaymentMethod> {
-        self.gift_shop_sales.iter().filter(|x| x.payment_method.is_some()).filter(|x| *x == method)
-    }*/
 }
 
 fn rename_files() {

@@ -1,3 +1,4 @@
+use chrono::{Duration, Local};
 use iced::advanced::Widget;
 use iced::alignment::Horizontal;
 use iced::Element;
@@ -37,7 +38,9 @@ impl App {
                 self.database.add_membership(self.sale_screen.membership().clone())
             }
             SaleMessage::AddGiftShopSale => {
-                self.database.add_gift_shop_sale(self.sale_screen.gift_shop_sale().clone())
+                let mut sale = self.sale_screen.gift_shop_sale().clone();
+                sale.update_date();
+                self.database.add_gift_shop_sale(sale)
             }
             _ => {}
         }
@@ -102,7 +105,7 @@ impl App {
             .to_string()
     }
 
-    fn sum_transactions_of_kind(&self, transaction_kind: TransactionKind) -> String {
+    fn sum_todays_transactions_of_kind(&self, transaction_kind: TransactionKind) -> String {
         format!("${:.2}", self.database.todays_transactions_of_kind(transaction_kind).map(|x| x.amount).sum::<f32>())
     }
 
@@ -132,14 +135,15 @@ impl App {
         type At = crate::admission::type_::Type_;
         type Mk = crate::membership::kind::Kind;
         type Pm = PaymentMethod;
+        let now = Local::now();
         iced::widget::column![
             self.summary_row("Daily Summary", [
                 ("Total Attendance", self.database.todays_transactions_of_kind(T::Admission).map(|x| x.quantity as u32).sum::<u32>().to_string()),
-                ("Admissions Revenue", self.sum_transactions_of_kind(T::Admission)),
-                ("Total Donations", self.sum_transactions_of_kind(T::Donation)),
-                ("Membership Sales", self.sum_transactions_of_kind(T::Membership)),
-                ("Gift Shop Sales", self.sum_transactions_of_kind(T::GiftShopSale)),
-                ("Sales Tax Collected", format!("${:.2}", self.database.gift_shop_sales.iter().map(|x| x.compute_tax()).sum::<f32>())),
+                ("Admissions Revenue", self.sum_todays_transactions_of_kind(T::Admission)),
+                ("Total Donations", self.sum_todays_transactions_of_kind(T::Donation)),
+                ("Membership Sales", self.sum_todays_transactions_of_kind(T::Membership)),
+                ("Gift Shop Sales", self.sum_todays_transactions_of_kind(T::GiftShopSale)),
+                ("Sales Tax Collected", format!("${:.2}", self.database.gift_shop_sales.iter().filter(|x| (now - x.date()) <= Duration::days(1)).map(|x| x.compute_tax()).sum::<f32>())),
                 ("Total Daily Revenue", format!("${:.2}", self.database.todays_transactions().map(|x| x.amount).sum::<f32>())),
             ]),
             self.summary_row("Monthly Payments Breakdown", [
