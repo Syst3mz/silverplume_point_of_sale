@@ -33,8 +33,8 @@ impl Donation {
         iced::widget::column![
             text("Donations").size(HEADER_SIZE),
             horizontal_rule(RULE_HEIGHT),
-            pick_list(PaymentMethod::VARIANTS, self.payment_method, Message::SetPaymentMethod).placeholder("Select Payment Method"),
             self.price.view().map(Message::Price),
+            pick_list(PaymentMethod::VARIANTS, self.payment_method, Message::SetPaymentMethod).placeholder("Select Payment Method"),
         ].spacing(RULE_HEIGHT).into()
     }
     
