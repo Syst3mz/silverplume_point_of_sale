@@ -63,6 +63,7 @@ impl GiftShopSale {
             pick_list(PaymentMethod::VARIANTS, self.payment_method.as_ref(), Message::PaymentMethodChanged).placeholder("Select Payment Method"),
             row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::QuantityChanged)].spacing(RULE_HEIGHT),
             self.sales_tax.view().map(|x| Message::SalesTaxChanged(x)),
+            text(format!("Total due: ${:.2}", self.compute_total_cost())).size(TEXT_SIZE),
         ].spacing(RULE_HEIGHT).into()
     }
 
