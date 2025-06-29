@@ -13,6 +13,7 @@ mod decimal_input;
 mod sale_screen;
 mod database;
 mod get_payment_method;
+mod date_time_wrapper;
 
 pub const HEADER_SIZE: u16 = 32;
 pub const TEXT_SIZE: u16 = 18;

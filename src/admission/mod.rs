@@ -1,28 +1,27 @@
-pub mod type_;
+pub mod kind;
 
 use iced::Element;
 use iced::widget::{container, pick_list, row, text};
 use iced_aw::number_input;
-use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
-use crate::admission::type_::Type_;
+use crate::admission::kind::Kind;
 use crate::as_description::AsDescription;
 use crate::as_transaction_record::AsTransactionRecord;
 use crate::get_payment_method::GetPaymentMethod;
 use crate::payment_method::PaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy)]
 pub struct Admission {
-    pub kind: Option<Type_>,
+    pub kind: Option<Kind>,
     payment_method: Option<PaymentMethod>,
     pub quantity: u16,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    KindSet(Type_),
+    KindSet(Kind),
     PaymentMethodSet(PaymentMethod),
     QuantitySet(u16),
 }
@@ -47,7 +46,7 @@ impl Admission {
         let mut column = iced::widget::column![
             iced::widget::text("Admissions").size(HEADER_SIZE),
             iced::widget::horizontal_rule(RULE_HEIGHT),
-            pick_list(Type_::VARIANTS, self.kind, Message::KindSet).placeholder("Select Admission Type"),
+            pick_list(Kind::VARIANTS, self.kind, Message::KindSet).placeholder("Select Admission Type"),
         ]
             .spacing(RULE_HEIGHT);
         
@@ -63,12 +62,12 @@ impl Admission {
         ).into()
     }
     
-    pub fn matches_admission_type(&self, ty: Type_) -> bool {
+    pub fn matches_admission_type(&self, kind: Kind) -> bool {
         let Some(self_type) = self.kind.as_ref() else {
             return false;
         };
         
-        *self_type == ty
+        *self_type == kind
     }
 
     pub fn compute_total_cost(&self) -> f32 {

@@ -1,6 +1,5 @@
 use iced::Element;
 use iced::widget::{horizontal_rule, pick_list, text};
-use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 use crate::as_transaction_record::AsTransactionRecord;
 use crate::payment_method::PaymentMethod;
@@ -9,7 +8,7 @@ use crate::decimal_input::DecimalInput;
 use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Donation {
     pub payment_method: Option<PaymentMethod>,
     price: DecimalInput,

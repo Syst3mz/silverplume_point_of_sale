@@ -1,9 +1,8 @@
 use iced::Element;
 use iced::widget::{text, text_input};
-use serde::{Deserialize, Serialize};
 use crate::{RULE_HEIGHT, TEXT_SIZE};
 
-#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct DecimalInput {
     field: String,
     label: String,

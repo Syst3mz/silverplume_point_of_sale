@@ -3,7 +3,6 @@ pub mod kind;
 use iced::Element;
 use iced::widget::{pick_list, row, text};
 use iced_aw::number_input;
-use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 use crate::as_transaction_record::AsTransactionRecord;
 use crate::membership::kind::Kind;
@@ -12,9 +11,8 @@ use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Membership {
-    #[serde(rename = "type")]
     kind: Option<Kind>,
     payment_method: Option<PaymentMethod>,
     pub quantity: u16

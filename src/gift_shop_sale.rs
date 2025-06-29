@@ -2,7 +2,6 @@ use chrono::{DateTime, Local};
 use iced::Element;
 use iced::widget::{pick_list, row, text, text_input};
 use iced_aw::number_input;
-use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 use crate::payment_method::PaymentMethod;
 use crate::decimal_input::DecimalInput;
@@ -11,9 +10,8 @@ use crate::as_transaction_record::AsTransactionRecord;
 use crate::get_payment_method::GetPaymentMethod;
 use crate::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(PartialEq, Debug, Clone, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct GiftShopSale {
-    date: DateTime<Local>,
     item_description: String,
     price: DecimalInput,
     pub payment_method: Option<PaymentMethod>,
@@ -25,7 +23,6 @@ const DEFAULT_SALES_TAX: f32 = 8.55 ;
 impl Default for GiftShopSale {
     fn default() -> Self {
         Self {
-            date: Local::now(),
             item_description: Default::default(),
             price: DecimalInput::new("Item Price", 0.0),
             payment_method: Default::default(),
@@ -75,12 +72,6 @@ impl GiftShopSale {
     }
     pub fn compute_total_cost(&self) -> f32 {
          self.pre_tax_cost() + self.compute_tax()
-    }
-    pub fn update_date(&mut self) {
-        self.date = Local::now();
-    }
-    pub fn date(&self) -> DateTime<Local> {
-        self.date
     }
 }
 

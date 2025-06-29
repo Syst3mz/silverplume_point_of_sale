@@ -1,7 +1,6 @@
-use serde::{Deserialize, Serialize};
 use strum::{Display, VariantArray};
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Serialize, Deserialize, Default, VariantArray, Display)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Default, VariantArray, Display)]
 pub enum Kind {
     #[default]
     #[strum(serialize = "Family - $40.00")]

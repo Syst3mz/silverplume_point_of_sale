@@ -14,7 +14,8 @@ use crate::transaction_record::{Hour, TransactionKind};
 
 pub struct App {
     sale_screen: SaleScreen,
-    database: Database
+    database: Database,
+    error: Option<anyhow::Error>,
 }
 
 type SaleMessage = crate::sale_screen::Message;
@@ -27,23 +28,21 @@ pub enum Message {
 impl App {
     fn handle_sale_message(&mut self, message: SaleMessage) {
         // For the love of all that is good, do the sale screen update AFTER the transaction is written to the database.
-        match message.clone() {
-            SaleMessage::AddAdmission => {
-                self.database.add_admission(self.sale_screen.admission().clone())
-            }
-            SaleMessage::AddDonation => {
-                self.database.add_donation(self.sale_screen.donation().clone())
-            }
-            SaleMessage::AddMembership => {
-                self.database.add_membership(self.sale_screen.membership().clone())
-            }
-            SaleMessage::AddGiftShopSale => {
-                let mut sale = self.sale_screen.gift_shop_sale().clone();
-                sale.update_date();
-                self.database.add_gift_shop_sale(sale)
-            }
-            _ => {}
+        let error = match message.clone() {
+            //SaleMessage::AddAdmission => self.database.store_in_db(self.sale_screen.admission()),
+            /*SaleMessage::AddDonation => self.database.store_in_db(self.sale_screen.donation()),
+            SaleMessage::AddMembership => self.database.store_in_db(self.sale_screen.membership()),
+            SaleMessage::AddGiftShopSale => self.database.store_in_db(self.sale_screen.gift_shop_sale()),*/
+            _ => {Ok(())}
+        };
+        
+        if let Err(error) = error {
+            println!("{:?}", error);
+            self.error = Some(error);
+        } else {
+            self.error = None;
         }
+        
         self.sale_screen.update(message);
     }
 
@@ -88,63 +87,23 @@ impl App {
             grid
         ].padding(RULE_HEIGHT).align_x(Horizontal::Center).into()
     }
-
-    fn sum_admission_type(&self, kind: crate::admission::type_::Type_) -> String {
-        self.database.admissions.iter()
-            .filter(|x| x.matches_admission_type(kind))
-            .map(|x| x.quantity as u32)
-            .sum::<u32>()
-            .to_string()
-    }
-
-    fn sum_membership_sales_type(&self, kind: crate::membership::kind::Kind) -> String {
-        self.database.memberships.iter()
-            .filter(|x| x.matches_type(kind))
-            .map(|x| x.quantity as u32)
-            .sum::<u32>()
-            .to_string()
-    }
-
-    fn sum_todays_transactions_of_kind(&self, transaction_kind: TransactionKind) -> String {
-        format!("${:.2}", self.database.todays_transactions_of_kind(transaction_kind).map(|x| x.amount).sum::<f32>())
-    }
-
-    fn sum_hourly_attendance(&self, hour: Hour) -> String {
-        self.database
-            .todays_transactions_of_kind(TransactionKind::Admission)
-            .filter(|x| x.hour == hour)
-            .map(|x| x.quantity as u32)
-            .sum::<u32>()
-            .to_string()
-    }
-
-    fn filter_by_payment_method<T: GetPaymentMethod>(from: &Vec<T>, payment_method: PaymentMethod) -> impl Iterator<Item=&T> {
-        from.iter().filter(move |x| x.get_payment_method().is_some() && x.get_payment_method().unwrap() == payment_method)
-    }
     
-    fn total_by_payment_method(&self, payment_method: PaymentMethod) -> String {
-        let admissions = Self::filter_by_payment_method(&self.database.admissions, payment_method).map(|x| x.compute_total_cost());
-        let donations = Self::filter_by_payment_method(&self.database.donations, payment_method).map(|x| x.amount());
-        let gift_shop_sales = Self::filter_by_payment_method(&self.database.gift_shop_sales, payment_method).map(|x| x.compute_total_cost());
-        let memberships = Self::filter_by_payment_method(&self.database.memberships, payment_method).map(|x| x.compute_total_cost());
-        format!("${:.2}", admissions.chain(donations.chain(gift_shop_sales.chain(memberships))).sum::<f32>())
-    }
 
     fn summary(&self) -> Element<Message> {
         type T = TransactionKind;
-        type At = crate::admission::type_::Type_;
+        type At = crate::admission::kind::Kind;
         type Mk = crate::membership::kind::Kind;
         type Pm = PaymentMethod;
         let now = Local::now();
         iced::widget::column![
-            self.summary_row("Daily Summary", [
+            /*self.summary_row("Daily Summary", [
                 ("Total Attendance", self.database.todays_transactions_of_kind(T::Admission).map(|x| x.quantity as u32).sum::<u32>().to_string()),
                 ("Admissions Revenue", self.sum_todays_transactions_of_kind(T::Admission)),
                 ("Total Donations", self.sum_todays_transactions_of_kind(T::Donation)),
                 ("Membership Sales", self.sum_todays_transactions_of_kind(T::Membership)),
                 ("Gift Shop Sales", self.sum_todays_transactions_of_kind(T::GiftShopSale)),
                 ("Sales Tax Collected", format!("${:.2}", self.database.gift_shop_sales.iter().filter(|x| (now - x.date()) <= Duration::days(1)).map(|x| x.compute_tax()).sum::<f32>())),
-                ("Total Daily Revenue", format!("${:.2}", self.database.todays_transactions().map(|x| x.amount).sum::<f32>())),
+                ("Total Daily Revenue", format!("${:.2}", self.database.todays_transactions().map(|x| x.total_cost).sum::<f32>())),
             ]),
             self.summary_row("Monthly Payments Breakdown", [
                 ("Cash - Admissions", format!("${:.2}", Self::filter_by_payment_method(&self.database.admissions, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
@@ -179,7 +138,7 @@ impl App {
                 ("1-2pm", self.sum_hourly_attendance(Hour::OneToTwo)),
                 ("2-3pm", self.sum_hourly_attendance(Hour::TwoToThree)),
                 ("3-4pm", self.sum_hourly_attendance(Hour::ThreeToFour)),
-            ])
+            ])*/
         ].spacing(RULE_HEIGHT).into()
     }
 
@@ -198,6 +157,7 @@ impl Default for App {
         Self {
             sale_screen: Default::default(),
             database: Default::default(),
+            error: None,
         }
     }
 }
