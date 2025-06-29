@@ -6,6 +6,7 @@ use strum::VariantArray;
 use crate::decimal_input::DecimalInput;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::model::payment_method::PaymentMethod;
+use crate::to_model::ToModel;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct GiftShopSale {
@@ -62,5 +63,20 @@ impl GiftShopSale {
 
     pub(crate) fn is_valid(&self) -> bool {
         self.payment_method.is_some() && self.quantity > 0 && self.price.value() >= 0.0 && self.sales_tax.value() >= 0.0
+    }
+}
+
+type Model = crate::model::gift_shop_sale::GiftShopSale;
+impl ToModel<Model> for GiftShopSale {
+    fn to_model(&self) -> anyhow::Result<Model> {
+        Ok(
+            Model::new(
+                self.item_description.clone(), 
+                self.price.value(), 
+                self.payment_method.unwrap(), 
+                self.quantity, 
+                self.sales_tax.value()
+            )
+        )
     }
 }

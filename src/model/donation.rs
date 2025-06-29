@@ -1,4 +1,5 @@
 use crate::model::as_transaction_record::AsTransactionRecord;
+use crate::model::date_time_wrapper::WrapInDateTime;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -7,6 +8,7 @@ pub struct Donation {
     pub payment_method: PaymentMethod,
     pub price: f32,
 }
+
 
 impl AsTransactionRecord for Donation {
     fn as_transaction_record(&self) -> TransactionRecord {
@@ -18,3 +20,5 @@ impl AsTransactionRecord for Donation {
         )
     }
 }
+
+impl WrapInDateTime for Donation {}

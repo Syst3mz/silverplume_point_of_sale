@@ -3,6 +3,8 @@ pub mod kind;
 use crate::as_description::AsDescription;
 use crate::model::admission::kind::Kind;
 use crate::model::as_transaction_record::AsTransactionRecord;
+use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::donation::Donation;
 use crate::model::get_payment_method::GetPaymentMethod;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
@@ -15,6 +17,13 @@ pub struct Admission {
 }
 
 impl Admission {
+    pub fn new(kind: Kind, payment_method: Option<PaymentMethod>, quantity: u16) -> Admission {
+        Self {
+            kind,
+            payment_method,
+            quantity,
+        }
+    }
     pub fn needs_payment(&self) -> bool {
         !self.kind.is_free()
     }
@@ -44,3 +53,5 @@ impl GetPaymentMethod for Admission {
         self.payment_method.clone()
     }
 }
+
+impl WrapInDateTime for Admission {}

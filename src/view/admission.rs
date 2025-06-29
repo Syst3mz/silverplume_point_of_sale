@@ -5,6 +5,7 @@ use strum::VariantArray;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::model::admission::kind::Kind;
 use crate::model::payment_method::PaymentMethod;
+use crate::to_model::ToModel;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Admission {
@@ -81,5 +82,12 @@ impl Default for Admission {
             payment_method: None,
             quantity: 1,
         }
+    }
+}
+
+type Model = crate::model::admission::Admission;
+impl ToModel<Model> for Admission {
+    fn to_model(&self) -> anyhow::Result<Model> {
+        Ok(Model::new(self.kind.unwrap(), self.payment_method, self.quantity))
     }
 }

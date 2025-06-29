@@ -1,4 +1,6 @@
 use crate::model::as_transaction_record::AsTransactionRecord;
+use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::donation::Donation;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -11,6 +13,15 @@ pub struct GiftShopSale {
     sales_tax: f32
 }
 impl GiftShopSale {
+    pub fn new(item_description: String, price: f32, payment_method: PaymentMethod, quantity: u16, sales_tax: f32) -> Self {
+        Self {
+            item_description,
+            price,
+            payment_method,
+            quantity,
+            sales_tax,
+        }
+    }
     pub fn pre_tax_cost(&self) -> f32 {
         self.price * self.quantity as f32
     }
@@ -33,3 +44,5 @@ impl AsTransactionRecord for GiftShopSale {
         )
     }
 }
+
+impl WrapInDateTime for GiftShopSale {}

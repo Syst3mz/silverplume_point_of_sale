@@ -38,3 +38,9 @@ impl<T> DateTimeWrapper<T> {
         }
     }
 }
+
+pub trait WrapInDateTime {
+    fn wrapped_in_date_time(self) -> DateTimeWrapper<Self> where Self: Sized {
+        DateTimeWrapper::new(self)
+    }
+}

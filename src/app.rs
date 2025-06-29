@@ -25,8 +25,8 @@ impl App {
     fn handle_sale_message(&mut self, message: SaleMessage) {
         // For the love of all that is good, do the sale screen update AFTER the transaction is written to the database.
         let error = match message.clone() {
-            //SaleMessage::AddAdmission => self.database.store_in_db(self.sale_screen.admission()),
-            /*SaleMessage::AddDonation => self.database.store_in_db(self.sale_screen.donation()),
+            /*SaleMessage::AddAdmission => self.database.store_in_db(self.sale_screen.admission()),
+            SaleMessage::AddDonation => self.database.store_in_db(self.sale_screen.donation()),
             SaleMessage::AddMembership => self.database.store_in_db(self.sale_screen.membership()),
             SaleMessage::AddGiftShopSale => self.database.store_in_db(self.sale_screen.gift_shop_sale()),*/
             _ => {Ok(())}

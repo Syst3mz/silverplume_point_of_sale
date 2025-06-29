@@ -4,6 +4,7 @@ use crate::model::payment_method::PaymentMethod;
 use iced::widget::{horizontal_rule, pick_list, text};
 use strum::VariantArray;
 use crate::{HEADER_SIZE, RULE_HEIGHT};
+use crate::to_model::ToModel;
 
 pub struct Donation {
     pub payment_method: Option<PaymentMethod>,
@@ -44,5 +45,15 @@ impl Default for Donation {
             payment_method: Default::default(),
             price: DecimalInput::new("Amount", 0.0),
         }
+    }
+}
+
+type Model = crate::model::donation::Donation;
+impl ToModel<Model> for Donation {
+    fn to_model(&self) -> anyhow::Result<Model> {
+        Ok(Model {
+            payment_method: self.payment_method.unwrap(),
+            price: self.price.value(),
+        })
     }
 }

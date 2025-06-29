@@ -7,6 +7,7 @@ use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::membership::kind::Kind;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
+use crate::to_model::ToModel;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Membership {
@@ -75,6 +76,11 @@ impl AsTransactionRecord for Membership {
             self.compute_total_cost()
         )
     }
+}
 
-    
+type Model = crate::model::membership::Membership;
+impl ToModel<Model> for Membership {
+    fn to_model(&self) -> anyhow::Result<Model> {
+        Ok(Model::new(self.kind.unwrap(), self.payment_method.unwrap(), self.quantity))
+    }
 }
