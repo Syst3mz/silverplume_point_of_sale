@@ -1,14 +1,11 @@
-use chrono::{DateTime, Local};
+
 use iced::Element;
 use iced::widget::{pick_list, row, text, text_input};
 use iced_aw::number_input;
 use strum::VariantArray;
-use crate::payment_method::PaymentMethod;
 use crate::decimal_input::DecimalInput;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::get_payment_method::GetPaymentMethod;
-use crate::transaction_record::{TransactionKind, TransactionRecord};
+use crate::model::payment_method::PaymentMethod;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct GiftShopSale {
@@ -63,36 +60,7 @@ impl GiftShopSale {
         ].spacing(RULE_HEIGHT).into()
     }
 
-    pub fn pre_tax_cost(&self) -> f32 {
-        self.price.value() * self.quantity as f32
-    }
-    
-    pub fn compute_tax(&self) -> f32 {
-        self.pre_tax_cost() * (self.sales_tax.value() / 100.0)
-    }
-    pub fn compute_total_cost(&self) -> f32 {
-         self.pre_tax_cost() + self.compute_tax()
-    }
-}
-
-impl AsTransactionRecord for GiftShopSale {
-    fn as_transaction_record(&self) -> TransactionRecord {
-        assert!(self.is_valid());
-        TransactionRecord::new(
-            TransactionKind::GiftShopSale,
-            self.item_description.clone(),
-            self.quantity,
-            self.compute_total_cost(),
-        )
-    }
-
-    fn is_valid(&self) -> bool {
-        self.payment_method.is_some()
-    }
-}
-
-impl GetPaymentMethod for GiftShopSale {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
-        self.payment_method.clone()
+    pub(crate) fn is_valid(&self) -> bool {
+        self.payment_method.is_some() && self.quantity > 0 && self.price.value() >= 0.0 && self.sales_tax.value() >= 0.0
     }
 }

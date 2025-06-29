@@ -1,14 +1,10 @@
 use iced::Element;
+use crate::decimal_input::DecimalInput;
+use crate::model::payment_method::PaymentMethod;
 use iced::widget::{horizontal_rule, pick_list, text};
 use strum::VariantArray;
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::payment_method::PaymentMethod;
 use crate::{HEADER_SIZE, RULE_HEIGHT};
-use crate::decimal_input::DecimalInput;
-use crate::get_payment_method::GetPaymentMethod;
-use crate::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(Debug, Clone)]
 pub struct Donation {
     pub payment_method: Option<PaymentMethod>,
     price: DecimalInput,
@@ -27,7 +23,7 @@ impl Donation {
             Message::Price(p) => self.price.update(p),
         }
     }
-    
+
     pub fn view(&self) -> Element<Message> {
         iced::widget::column![
             text("Donations").size(HEADER_SIZE),
@@ -36,9 +32,9 @@ impl Donation {
             self.price.view().map(Message::Price),
         ].spacing(RULE_HEIGHT).into()
     }
-    
-    pub fn amount(&self) -> f32 {
-        self.price.value()
+
+    pub(crate) fn is_valid(&self) -> bool {
+        self.payment_method.is_some()
     }
 }
 
@@ -48,27 +44,5 @@ impl Default for Donation {
             payment_method: Default::default(),
             price: DecimalInput::new("Amount", 0.0),
         }
-    }
-}
-
-impl AsTransactionRecord for Donation {
-    fn as_transaction_record(&self) -> TransactionRecord {
-        assert!(self.is_valid());
-        TransactionRecord::new(
-            TransactionKind::Donation,
-            "Donation".to_string(),
-            1,
-            self.price.value(),
-        )
-    }
-
-    fn is_valid(&self) -> bool {
-        self.payment_method.is_some()
-    }
-}
-
-impl GetPaymentMethod for Donation {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
-        self.payment_method.clone()
     }
 }

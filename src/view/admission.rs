@@ -1,16 +1,10 @@
-pub mod kind;
-
 use iced::Element;
 use iced::widget::{container, pick_list, row, text};
 use iced_aw::number_input;
 use strum::VariantArray;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
-use crate::admission::kind::Kind;
-use crate::as_description::AsDescription;
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::get_payment_method::GetPaymentMethod;
-use crate::payment_method::PaymentMethod;
-use crate::transaction_record::{TransactionKind, TransactionRecord};
+use crate::model::admission::kind::Kind;
+use crate::model::payment_method::PaymentMethod;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Admission {
@@ -31,7 +25,7 @@ impl Admission {
         let Some(admission_type) = self.kind.as_ref() else {
             return false;
         };
-        
+
         !admission_type.is_free()
     }
     pub fn update(&mut self, message: Message) {
@@ -49,29 +43,34 @@ impl Admission {
             pick_list(Kind::VARIANTS, self.kind, Message::KindSet).placeholder("Select Admission Type"),
         ]
             .spacing(RULE_HEIGHT);
-        
-        
+
+
         if self.needs_payment() {
             column = column
                 .push(pick_list(PaymentMethod::VARIANTS, self.payment_method, Message::PaymentMethodSet)
-                .placeholder("Select Payment Method"));
+                    .placeholder("Select Payment Method"));
         }
-        
+
         container(
             column.push(row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::QuantitySet)].spacing(RULE_HEIGHT)),
         ).into()
     }
-    
+
     pub fn matches_admission_type(&self, kind: Kind) -> bool {
         let Some(self_type) = self.kind.as_ref() else {
             return false;
         };
-        
+
         *self_type == kind
     }
 
     pub fn compute_total_cost(&self) -> f32 {
         self.quantity as f32 * self.kind.map(|kind| kind.cost()).unwrap_or(0.0)
+    }
+
+    pub(crate) fn is_valid(&self) -> bool {
+        let payment_ok = if self.needs_payment() { self.payment_method.is_some() } else { true };
+        self.kind.is_some() && payment_ok && self.quantity > 0
     }
 }
 
@@ -82,29 +81,5 @@ impl Default for Admission {
             payment_method: None,
             quantity: 1,
         }
-    }
-}
-
-impl AsTransactionRecord for Admission {
-    fn as_transaction_record(&self) -> TransactionRecord {
-        assert!(self.is_valid());
-        TransactionRecord::new(
-            TransactionKind::Admission,
-            self.kind.map(|x| x.as_description().to_string()).unwrap_or(String::from("ERROR: MISSING ADMISSION KIND")),
-            self.quantity,
-            self.compute_total_cost()
-        )
-
-    }
-
-    fn is_valid(&self) -> bool {
-        let payment_ok = if self.needs_payment() { self.payment_method.is_some() } else { true };
-        self.kind.is_some() && payment_ok && self.quantity > 0
-    }
-}
-
-impl GetPaymentMethod for Admission {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
-        self.payment_method.clone()
     }
 }

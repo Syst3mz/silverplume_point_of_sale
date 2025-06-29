@@ -1,8 +1,9 @@
 use sqlite::Connection;
 mod has_schema;
-mod object_mapper;
+pub mod object_mapper;
 mod to_sql;
 mod from_sql;
+pub mod database_object;
 
 pub struct Database {
     database: Connection

@@ -1,15 +1,12 @@
-pub mod kind;
-
 use iced::Element;
 use iced::widget::{pick_list, row, text};
 use iced_aw::number_input;
 use strum::VariantArray;
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::membership::kind::Kind;
-use crate::payment_method::PaymentMethod;
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
-use crate::get_payment_method::GetPaymentMethod;
-use crate::transaction_record::{TransactionKind, TransactionRecord};
+use crate::model::as_transaction_record::AsTransactionRecord;
+use crate::model::membership::kind::Kind;
+use crate::model::payment_method::PaymentMethod;
+use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct Membership {
@@ -32,7 +29,7 @@ impl Membership {
             Message::Quantity(q) => self.quantity = q,
         }
     }
-    
+
     pub fn view(&self) -> Element<Message> {
         iced::widget::column![
             iced::widget::text("Memberships").size(HEADER_SIZE),
@@ -42,13 +39,17 @@ impl Membership {
             row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::Quantity,)].spacing(RULE_HEIGHT),
         ].spacing(RULE_HEIGHT).into()
     }
-    
+
     pub fn matches_type(&self, kind: Kind) -> bool {
         self.kind == Some(kind)
     }
-    
+
     pub fn compute_total_cost(&self) -> f32 {
         self.quantity as f32 * self.kind.map(|x| x.price()).unwrap_or(-1.0)
+    }
+
+    pub(crate) fn is_valid(&self) -> bool {
+        self.kind.is_some() && self.payment_method.is_some() && self.quantity >= 1
     }
 }
 
@@ -65,7 +66,7 @@ impl Default for Membership {
 impl AsTransactionRecord for Membership {
     fn as_transaction_record(&self) -> TransactionRecord {
         assert!(self.is_valid());
-        
+
         TransactionRecord::new (
             TransactionKind::Membership,
             self.kind.map(|x| x.to_string())
@@ -75,13 +76,5 @@ impl AsTransactionRecord for Membership {
         )
     }
 
-    fn is_valid(&self) -> bool {
-        self.kind.is_some() && self.payment_method.is_some() && self.quantity >= 1
-    }
-}
-
-impl GetPaymentMethod for Membership {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
-        self.payment_method.clone()
-    }
+    
 }

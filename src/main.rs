@@ -1,19 +1,12 @@
 use crate::app::App;
-
-mod transaction_record;
-mod admission;
-mod donation;
-mod membership;
-mod payment_method;
-mod gift_shop_sale;
 mod app;
-mod as_transaction_record;
 mod as_description;
 mod decimal_input;
 mod sale_screen;
 mod database;
-mod get_payment_method;
-mod date_time_wrapper;
+mod model;
+mod view;
+mod to_model;
 
 pub const HEADER_SIZE: u16 = 32;
 pub const TEXT_SIZE: u16 = 18;

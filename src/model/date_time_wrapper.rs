@@ -1,14 +1,5 @@
 use chrono::{DateTime, Local, TimeZone, Timelike};
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
-pub enum TransactionKind {
-    Admission,
-    Membership,
-    Donation,
-    GiftShopSale,
-}
-
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Hour {
     ElevenToTwelve,
@@ -20,7 +11,7 @@ pub enum Hour {
 
 impl<Tz: TimeZone> From<DateTime<Tz>> for Hour {
     fn from(dt: DateTime<Tz>) -> Self {
-        match dt.hour() { 
+        match dt.hour() {
             10 => Hour::ElevenToTwelve,
             11 => Hour::TwelveToOne,
             12 => Hour::OneToTwo,
@@ -30,26 +21,20 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for Hour {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct TransactionRecord {
-    pub kind: TransactionKind,
-    pub description: String,
-    pub quantity: u16,
-    pub total_cost: f32,
-    pub hour: Hour
+pub struct DateTimeWrapper<T> {
+    element: T,
+    date_time: DateTime<Local>,
+    hour: Hour
 }
 
-impl TransactionRecord {
-    pub fn new(kind: TransactionKind, description: String, quantity: u16, amount: f32) -> Self {
+impl<T> DateTimeWrapper<T> {
+    pub fn new(element: T) -> DateTimeWrapper<T> {
         let now = Local::now();
         let hour = Hour::from(now);
         Self {
-            kind,
-            description,
-            quantity,
-            total_cost: amount,
-            hour
+            element,
+            date_time: now,
+            hour,
         }
     }
-    
 }

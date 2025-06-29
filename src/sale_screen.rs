@@ -1,10 +1,9 @@
 use iced::Element;
 use iced::widget::{button, row};
-use crate::admission::Admission;
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::donation::Donation;
-use crate::gift_shop_sale::GiftShopSale;
-use crate::membership::Membership;
+use crate::view::admission::Admission;
+use crate::view::donation::Donation;
+use crate::view::gift_shop_sale::GiftShopSale;
+use crate::view::membership::Membership;
 use crate::RULE_HEIGHT;
 pub struct SaleScreen {
     admission: Admission,
@@ -15,13 +14,13 @@ pub struct SaleScreen {
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    Admission(crate::admission::Message),
+    Admission(crate::view::admission::Message),
     AddAdmission,
-    Donation(crate::donation::Message),
+    Donation(crate::view::donation::Message),
     AddDonation,
-    Membership(crate::membership::Message),
+    Membership(crate::view::membership::Message),
     AddMembership,
-    GiftShopSale(crate::gift_shop_sale::Message),
+    GiftShopSale(crate::view::gift_shop_sale::Message),
     AddGiftShopSale,
 }
 

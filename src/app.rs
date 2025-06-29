@@ -1,14 +1,10 @@
-use chrono::{Duration, Local};
 use iced::advanced::Widget;
 use iced::alignment::Horizontal;
 use iced::Element;
 use iced::widget::{container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::database::Database;
-use crate::get_payment_method::GetPaymentMethod;
-use crate::payment_method::PaymentMethod;
 use crate::sale_screen::SaleScreen;
-use crate::transaction_record::{Hour, TransactionKind};
 
 
 
@@ -90,11 +86,10 @@ impl App {
     
 
     fn summary(&self) -> Element<Message> {
-        type T = TransactionKind;
+        /*type T = TransactionKind;
         type At = crate::admission::kind::Kind;
         type Mk = crate::membership::kind::Kind;
-        type Pm = PaymentMethod;
-        let now = Local::now();
+        type Pm = PaymentMethod;*/
         iced::widget::column![
             /*self.summary_row("Daily Summary", [
                 ("Total Attendance", self.database.todays_transactions_of_kind(T::Admission).map(|x| x.quantity as u32).sum::<u32>().to_string()),
