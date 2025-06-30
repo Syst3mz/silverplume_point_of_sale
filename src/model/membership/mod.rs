@@ -1,3 +1,5 @@
+use crate::database::database_object::DatabaseObject;
+use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
 use crate::model::donation::Donation;
@@ -43,3 +45,20 @@ impl AsTransactionRecord for Membership {
 }
 
 impl WrapInDateTime for Membership {}
+impl DatabaseObject for Membership {
+    fn build_object_mapper(&self) -> ObjectMapper {
+        ObjectMapper::new("memberships")
+            .add_field("kind", self.kind.to_string())
+            .add_field("payment_method", self.payment_method.to_string())
+            .add_field("quantity", self.quantity.to_string())
+    }
+}
+impl Default for Membership {
+    fn default() -> Self {
+        Self {
+            kind: Default::default(),
+            payment_method: Default::default(),
+            quantity: 0,
+        }
+    }
+}

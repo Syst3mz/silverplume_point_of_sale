@@ -10,3 +10,4 @@ pub mod gift_shop_sale;
 pub mod admission;
 pub mod transaction_record;
 pub mod membership;
+mod hour;

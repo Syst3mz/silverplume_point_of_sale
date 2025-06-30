@@ -4,9 +4,12 @@ use iced::Element;
 use iced::widget::{container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::database::Database;
+use crate::database::database_object::DatabaseObject;
+use crate::map_and_pass::MapAndPass;
+use crate::model::as_transaction_record::AsTransactionRecord;
+use crate::model::date_time_wrapper::WrapInDateTime;
 use crate::sale_screen::SaleScreen;
-
-
+use crate::to_model::ToModel;
 
 pub struct App {
     sale_screen: SaleScreen,
@@ -20,15 +23,23 @@ pub enum Message {
     SaleMessage(SaleMessage)
 }
 
-
-impl App {
+impl App {    
+    fn transactionify_and_insert<S, T>(&mut self, object: S) -> anyhow::Result<()> where
+        T: DatabaseObject+AsTransactionRecord+WrapInDateTime,
+        S: ToModel<ModelType=T> 
+    {
+        let object = object.to_model()?;
+        self.database.insert(object.as_transaction_record().wrapped_in_date_time())?;
+        self.database.insert(object.wrapped_in_date_time())
+    }
+    
     fn handle_sale_message(&mut self, message: SaleMessage) {
         // For the love of all that is good, do the sale screen update AFTER the transaction is written to the database.
         let error = match message.clone() {
-            /*SaleMessage::AddAdmission => self.database.store_in_db(self.sale_screen.admission()),
-            SaleMessage::AddDonation => self.database.store_in_db(self.sale_screen.donation()),
-            SaleMessage::AddMembership => self.database.store_in_db(self.sale_screen.membership()),
-            SaleMessage::AddGiftShopSale => self.database.store_in_db(self.sale_screen.gift_shop_sale()),*/
+            SaleMessage::AddAdmission => self.transactionify_and_insert(self.sale_screen.admission().clone()),
+            SaleMessage::AddDonation => self.transactionify_and_insert(self.sale_screen.donation().clone()),
+            SaleMessage::AddMembership => self.transactionify_and_insert(self.sale_screen.membership().clone()),
+            SaleMessage::AddGiftShopSale => self.transactionify_and_insert(self.sale_screen.gift_shop_sale().clone()),
             _ => {Ok(())}
         };
         
@@ -151,7 +162,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             sale_screen: Default::default(),
-            database: Default::default(),
+            database: Database::new(),
             error: None,
         }
     }

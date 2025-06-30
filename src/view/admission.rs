@@ -85,9 +85,10 @@ impl Default for Admission {
     }
 }
 
-type Model = crate::model::admission::Admission;
-impl ToModel<Model> for Admission {
-    fn to_model(&self) -> anyhow::Result<Model> {
-        Ok(Model::new(self.kind.unwrap(), self.payment_method, self.quantity))
+impl ToModel for Admission {
+    type ModelType = crate::model::admission::Admission;
+
+    fn to_model(&self) -> anyhow::Result<Self::ModelType> {
+        Ok(Self::ModelType::new(self.kind.unwrap(), self.payment_method, self.quantity))
     }
 }

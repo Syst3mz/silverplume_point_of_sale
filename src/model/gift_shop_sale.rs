@@ -1,3 +1,5 @@
+use crate::database::database_object::DatabaseObject;
+use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
 use crate::model::donation::Donation;
@@ -33,7 +35,6 @@ impl GiftShopSale {
          self.pre_tax_cost() + self.compute_tax()
     }
 }
-
 impl AsTransactionRecord for GiftShopSale {
     fn as_transaction_record(&self) -> TransactionRecord {
         TransactionRecord::new(
@@ -44,5 +45,25 @@ impl AsTransactionRecord for GiftShopSale {
         )
     }
 }
-
 impl WrapInDateTime for GiftShopSale {}
+impl DatabaseObject for GiftShopSale {
+    fn build_object_mapper(&self) -> ObjectMapper {
+        ObjectMapper::new("gift_shop_sales")
+            .add_field("item_description", self.item_description.clone())
+            .add_field("price", self.price)
+            .add_field("payment_method", self.payment_method.clone())
+            .add_field("quantity", self.quantity as i32)
+            .add_field("sales_tax", self.sales_tax)
+    }
+}
+impl Default for GiftShopSale {
+    fn default() -> Self {
+        Self {
+            item_description: Default::default(),
+            price: 0.0,
+            payment_method: Default::default(),
+            quantity: 0,
+            sales_tax: 0.0,
+        }
+    }
+}

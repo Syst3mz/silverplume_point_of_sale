@@ -1,3 +1,5 @@
+use chrono::{DateTime, Local};
+
 pub trait ToSql {
     fn to_sql(&self) -> String;
 }
@@ -46,5 +48,10 @@ impl<T: ToSql> ToSql for Option<T> {
     fn to_sql(&self) -> String {
         let Some(value) = &self else {return "NULL".to_string(); };
         value.to_sql()
+    }
+}
+impl ToSql for DateTime<Local> {
+    fn to_sql(&self) -> String {
+        format!("'{}'", self.to_rfc3339())
     }
 }

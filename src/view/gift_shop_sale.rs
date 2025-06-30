@@ -66,11 +66,12 @@ impl GiftShopSale {
     }
 }
 
-type Model = crate::model::gift_shop_sale::GiftShopSale;
-impl ToModel<Model> for GiftShopSale {
-    fn to_model(&self) -> anyhow::Result<Model> {
+impl ToModel for GiftShopSale {
+    type ModelType = crate::model::gift_shop_sale::GiftShopSale;
+
+    fn to_model(&self) -> anyhow::Result<Self::ModelType> {
         Ok(
-            Model::new(
+            Self::ModelType::new(
                 self.item_description.clone(), 
                 self.price.value(), 
                 self.payment_method.unwrap(), 

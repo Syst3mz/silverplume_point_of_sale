@@ -6,6 +6,7 @@ use strum::VariantArray;
 use crate::{HEADER_SIZE, RULE_HEIGHT};
 use crate::to_model::ToModel;
 
+#[derive(Debug, Clone)]
 pub struct Donation {
     pub payment_method: Option<PaymentMethod>,
     price: DecimalInput,
@@ -48,10 +49,11 @@ impl Default for Donation {
     }
 }
 
-type Model = crate::model::donation::Donation;
-impl ToModel<Model> for Donation {
-    fn to_model(&self) -> anyhow::Result<Model> {
-        Ok(Model {
+impl ToModel for Donation {
+    type ModelType = crate::model::donation::Donation;
+
+    fn to_model(&self) -> anyhow::Result<Self::ModelType> {
+        Ok(Self::ModelType {
             payment_method: self.payment_method.unwrap(),
             price: self.price.value(),
         })

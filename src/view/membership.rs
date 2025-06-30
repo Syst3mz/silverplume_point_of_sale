@@ -78,9 +78,9 @@ impl AsTransactionRecord for Membership {
     }
 }
 
-type Model = crate::model::membership::Membership;
-impl ToModel<Model> for Membership {
-    fn to_model(&self) -> anyhow::Result<Model> {
-        Ok(Model::new(self.kind.unwrap(), self.payment_method.unwrap(), self.quantity))
+impl ToModel for Membership {
+    type ModelType = crate::model::membership::Membership;
+    fn to_model(&self) -> anyhow::Result<Self::ModelType> {
+        Ok(Self::ModelType::new(self.kind.unwrap(), self.payment_method.unwrap(), self.quantity))
     }
 }

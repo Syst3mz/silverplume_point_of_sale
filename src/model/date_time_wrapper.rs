@@ -1,25 +1,8 @@
-use chrono::{DateTime, Local, TimeZone, Timelike};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Hour {
-    ElevenToTwelve,
-    TwelveToOne,
-    OneToTwo,
-    TwoToThree,
-    ThreeToFour,
-}
-
-impl<Tz: TimeZone> From<DateTime<Tz>> for Hour {
-    fn from(dt: DateTime<Tz>) -> Self {
-        match dt.hour() {
-            10 => Hour::ElevenToTwelve,
-            11 => Hour::TwelveToOne,
-            12 => Hour::OneToTwo,
-            13 => Hour::TwoToThree,
-            _ => Hour::ThreeToFour,
-        }
-    }
-}
+use chrono::{DateTime, Local};
+use crate::database::database_object::DatabaseObject;
+use crate::database::has_schema::HasSchema;
+use crate::database::object_mapper::ObjectMapper;
+use crate::model::hour::Hour;
 
 pub struct DateTimeWrapper<T> {
     element: T,
@@ -39,8 +22,17 @@ impl<T> DateTimeWrapper<T> {
     }
 }
 
+impl<T: DatabaseObject> DatabaseObject for DateTimeWrapper<T> {
+    fn build_object_mapper(&self) -> ObjectMapper {
+        self.element.build_object_mapper()
+            .add_field("date", self.date_time)
+            .add_field("hour", self.hour)
+    }
+}
+
 pub trait WrapInDateTime {
     fn wrapped_in_date_time(self) -> DateTimeWrapper<Self> where Self: Sized {
         DateTimeWrapper::new(self)
     }
 }
+

@@ -7,6 +7,7 @@ mod database;
 mod model;
 mod view;
 mod to_model;
+mod map_and_pass;
 
 pub const HEADER_SIZE: u16 = 32;
 pub const TEXT_SIZE: u16 = 18;
