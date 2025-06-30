@@ -9,7 +9,7 @@ macro_rules! impl_to_sql_via_to_string {
         impl ToSql for $ty {
             fn to_sql(&self) -> String {
                 self.to_string()
-            } 
+            }
         }
     };
 }
@@ -24,7 +24,7 @@ impl_to_sql_via_to_string!(f64);
 
 impl ToSql for bool {
     fn to_sql(&self) -> String {
-        if *self { 
+        if *self {
             "TRUE".to_string()
         } else {
             "FALSE".to_string()
@@ -34,10 +34,9 @@ impl ToSql for bool {
 
 impl ToSql for &str {
     fn to_sql(&self) -> String {
-        format!("'{}'", *self)
+        format!("'{}'", self.replace("'", "''"))
     }
 }
-
 impl ToSql for String {
     fn to_sql(&self) -> String {
         self.as_str().to_sql()
