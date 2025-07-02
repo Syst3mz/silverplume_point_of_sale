@@ -1,4 +1,4 @@
-use crate::database::database_object::DatabaseObject;
+use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
@@ -23,7 +23,7 @@ impl AsTransactionRecord for Donation {
     }
 }
 
-impl DatabaseObject for Donation {
+impl CanBuildObjectMapper for Donation {
     fn build_object_mapper(&self) -> ObjectMapper {
         ObjectMapper::new("donations")
             .add_field("payment_method", self.payment_method.clone())

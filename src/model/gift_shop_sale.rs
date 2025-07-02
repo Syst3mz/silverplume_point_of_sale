@@ -1,4 +1,4 @@
-use crate::database::database_object::DatabaseObject;
+use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
@@ -46,7 +46,7 @@ impl AsTransactionRecord for GiftShopSale {
     }
 }
 impl WrapInDateTime for GiftShopSale {}
-impl DatabaseObject for GiftShopSale {
+impl CanBuildObjectMapper for GiftShopSale {
     fn build_object_mapper(&self) -> ObjectMapper {
         ObjectMapper::new("gift_shop_sales")
             .add_field("item_description", self.item_description.clone())

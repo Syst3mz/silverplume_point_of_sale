@@ -1,7 +1,7 @@
 use std::hash::Hash;
 use chrono::{DateTime, Local, TimeZone, Timelike};
 use strum::Display;
-use crate::database::database_object::DatabaseObject;
+use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::has_schema::{HasSchema, NOT_NULL};
 use crate::database::object_mapper::ObjectMapper;
 use crate::database::to_sql::ToSql;
@@ -51,7 +51,7 @@ impl TransactionRecord {
     }
 }
 
-impl DatabaseObject for TransactionRecord {
+impl CanBuildObjectMapper for TransactionRecord {
     fn build_object_mapper(&self) -> ObjectMapper {
         ObjectMapper::new("transaction_records")
             .add_field("kind", self.kind)

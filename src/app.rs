@@ -1,11 +1,11 @@
+use chrono::Duration;
 use iced::advanced::Widget;
 use iced::alignment::Horizontal;
 use iced::Element;
-use iced::widget::{container, horizontal_rule, scrollable, text};
+use iced::widget::{button, container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::database::Database;
-use crate::database::database_object::DatabaseObject;
-use crate::map_and_pass::MapAndPass;
+use crate::database::database_object::CanBuildObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
 use crate::sale_screen::SaleScreen;
@@ -20,12 +20,13 @@ pub struct App {
 type SaleMessage = crate::sale_screen::Message;
 #[derive(Debug, Clone)]
 pub enum Message {
-    SaleMessage(SaleMessage)
+    SaleMessage(SaleMessage),
+    DoTheSelect
 }
 
 impl App {    
     fn transactionify_and_insert<S, T>(&mut self, object: S) -> anyhow::Result<()> where
-        T: DatabaseObject+AsTransactionRecord+WrapInDateTime,
+        T: CanBuildObjectMapper +AsTransactionRecord+WrapInDateTime,
         S: ToModel<ModelType=T> 
     {
         let object = object.to_model()?;
@@ -55,7 +56,13 @@ impl App {
 
     pub fn update(&mut self, message: Message) {
         match message {
-            Message::SaleMessage(s) => self.handle_sale_message(s)
+            Message::SaleMessage(s) => self.handle_sale_message(s),
+            Message::DoTheSelect => {
+                let admissions_today: Vec<crate::model::admission::Admission> = self.database.select("admissions", Duration::days(1)).expect("Unable to read database");
+                for admission in admissions_today {
+                    println!("{:?}", admission);
+                }
+            }
         }
     }
 
@@ -150,6 +157,7 @@ impl App {
 
     pub fn view(&self) -> Element<Message> {
         scrollable(iced::widget::column![
+            button("Do The Select!").on_press(Message::DoTheSelect),
             self.sale_screen.view().map(Message::SaleMessage),
             self.summary(),
 

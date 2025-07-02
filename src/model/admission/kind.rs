@@ -1,7 +1,9 @@
-use strum::{Display, VariantArray};
+use std::str::FromStr;
+use sqlite::Value;
+use strum::{Display, EnumString, VariantArray};
 use crate::as_description::AsDescription;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, VariantArray, Display, Default)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash, VariantArray, Display, EnumString)]
 pub enum Kind {
     #[default]
     Adult,
@@ -26,6 +28,24 @@ impl Kind {
             Kind::ChildUnderThirteen => 3.0,
             Kind::ChildUnderSix | Kind::PfspMember => 0.0
         }
+    }
+}
+
+impl TryFrom<&Value> for Kind {
+    type Error = sqlite::Error;
+
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        let Value::String(str) = value else { 
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("value is not a string, and therefore cannot be converted to a Kind.".to_string()),
+            })
+        };
+        
+        Ok(Kind::from_str(str).map_err(|x| sqlite::Error {
+            code: None,
+            message: Some(x.to_string()),
+        })?)
     }
 }
 

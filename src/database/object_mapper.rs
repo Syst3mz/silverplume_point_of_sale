@@ -30,6 +30,10 @@ impl ObjectMapper {
         }
     }
     
+    pub fn name(&self) -> &str {
+        &self.table_name
+    }
+    
     pub fn add_field(mut self, name: impl AsRef<str>, field: impl Mappable + 'static) -> ObjectMapper {
         self.fields.insert(name.as_ref().to_string(), Box::new(field));
         self

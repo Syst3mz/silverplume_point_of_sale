@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local};
-use crate::database::database_object::DatabaseObject;
-use crate::database::has_schema::HasSchema;
+use sqlite::{Row, Value};
+use crate::database::database_object::CanBuildObjectMapper;
+use crate::database::from_sql::FromSql;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::hour::Hour;
 
@@ -22,10 +23,10 @@ impl<T> DateTimeWrapper<T> {
     }
 }
 
-impl<T: DatabaseObject> DatabaseObject for DateTimeWrapper<T> {
+impl<T: CanBuildObjectMapper> CanBuildObjectMapper for DateTimeWrapper<T> {
     fn build_object_mapper(&self) -> ObjectMapper {
         self.element.build_object_mapper()
-            .add_field("date", self.date_time)
+            .add_field("date_time", self.date_time)
             .add_field("hour", self.hour)
     }
 }
@@ -35,4 +36,24 @@ pub trait WrapInDateTime {
         DateTimeWrapper::new(self)
     }
 }
-
+fn read_date_time(v: Value) -> anyhow::Result<DateTime<Local>> {
+    let Value::String(str) = v else {
+        return Err(anyhow::Error::msg("Expected date_time to be stored as a string."));
+    };
+    
+    Ok(DateTime::parse_from_rfc3339(str.as_str())?.into())
+}
+impl<T: FromSql> FromSql for DateTimeWrapper<T> {
+    fn from_sql(mut row: Row) -> anyhow::Result<Self>
+    where
+        Self: Sized
+    {
+        let date_time = read_date_time(row.take("date_time"))?;
+        let hour = row.try_read("hour")?;
+        Ok(Self {
+            element: T::from_sql(row)?,
+            date_time,
+            hour,
+        })
+    }
+}

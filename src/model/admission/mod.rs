@@ -1,7 +1,9 @@
 pub mod kind;
 
+use sqlite::Row;
 use crate::as_description::AsDescription;
-use crate::database::database_object::DatabaseObject;
+use crate::database::database_object::CanBuildObjectMapper;
+use crate::database::from_sql::{from_option, FromSql};
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::admission::kind::Kind;
 use crate::model::as_transaction_record::AsTransactionRecord;
@@ -56,12 +58,25 @@ impl GetPaymentMethod for Admission {
 }
 
 impl WrapInDateTime for Admission {}
-impl DatabaseObject for Admission {
+impl CanBuildObjectMapper for Admission {
     fn build_object_mapper(&self) -> ObjectMapper {
         ObjectMapper::new("admissions")
-            .add_field("kind", self.kind.as_description().to_string())
+            .add_field("kind", self.kind.to_string())
             .add_field("payment_method", self.payment_method)
             .add_field("quantity", self.quantity as i32)
+    }
+}
+impl FromSql for Admission {
+    fn from_sql(mut row: Row) -> anyhow::Result<Self>
+    where
+        Self: Sized
+    {
+        let x:i64 = row.try_read("quantity")?;
+        Ok(Self {
+            kind: row.try_read("kind")?,
+            payment_method: from_option(&row.take("payment_method"))?,
+            quantity: x as u16,
+        })
     }
 }
 impl Default for Admission {
