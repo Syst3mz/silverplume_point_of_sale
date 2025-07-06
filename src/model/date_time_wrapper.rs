@@ -24,6 +24,8 @@ impl<T> DateTimeWrapper<T> {
 }
 
 impl<T: CanBuildObjectMapper> CanBuildObjectMapper for DateTimeWrapper<T> {
+    const TABLE_NAME: &'static str = "INVALID TABLE NAME, THIS IS JUST A WRAPPER.";
+
     fn build_object_mapper(&self) -> ObjectMapper {
         self.element.build_object_mapper()
             .add_field("date_time", self.date_time)

@@ -59,8 +59,10 @@ impl GetPaymentMethod for Admission {
 
 impl WrapInDateTime for Admission {}
 impl CanBuildObjectMapper for Admission {
+    const TABLE_NAME: &'static str = "admissions";
+
     fn build_object_mapper(&self) -> ObjectMapper {
-        ObjectMapper::new("admissions")
+        ObjectMapper::new(Self::TABLE_NAME)
             .add_field("kind", self.kind.to_string())
             .add_field("payment_method", self.payment_method)
             .add_field("quantity", self.quantity as i32)

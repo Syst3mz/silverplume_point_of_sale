@@ -4,7 +4,12 @@ use sqlite::{Connection, Value};
 use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::from_sql::FromSql;
 use crate::database::to_sql::ToSql;
+use crate::model::admission::Admission;
 use crate::model::date_time_wrapper::DateTimeWrapper;
+use crate::model::donation::Donation;
+use crate::model::gift_shop_sale::GiftShopSale;
+use crate::model::membership::Membership;
+use crate::model::transaction_record::TransactionRecord;
 
 pub mod has_schema;
 pub mod object_mapper;
@@ -13,35 +18,65 @@ pub mod from_sql;
 pub mod database_object;
 
 pub struct Database {
-    database: Connection
+    database: Connection,
+    daily_admissions: Vec<Admission>,
+    daily_memberships: Vec<Membership>,
+    daily_donations: Vec<Donation>,
+    daily_gift_shop_sales: Vec<GiftShopSale>,
+    daily_transactions: Vec<TransactionRecord>
 }
 
 
 impl Database {
     const FILEPATH: &'static str = "pos.db";
+
     pub fn new() -> Self {
         let conn = Connection::open(Self::FILEPATH).expect("Can't open database");
         Self::create_schemas(&conn);
-        Self {
-            database: conn
-        }
+        let mut start = Self {
+            database: conn,
+            daily_admissions: vec![],
+            daily_memberships: vec![],
+            daily_donations: vec![],
+            daily_gift_shop_sales: vec![],
+            daily_transactions: vec![],
+        };
+
+        start.read_entire_day();
+        start
+    }
+
+    fn read_entire_day(&mut self) {
+        let _ = self.select(<Admission as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_admissions = x);
+        let _ = self.select(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_memberships = x);
+        let _ = self.select(<Donation as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_donations = x);
+        let _ = self.select(<GiftShopSale as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_gift_shop_sales = x);
+        let _ = self.select(<TransactionRecord as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_transactions = x);
     }
     fn create_schemas(connection: &Connection) {
-        use crate::model::*;
         let defaults = [
-            DateTimeWrapper::new(admission::Admission::default()).build_object_mapper().schema(),
-            DateTimeWrapper::new(donation::Donation::default()).build_object_mapper().schema(),
-            DateTimeWrapper::new(gift_shop_sale::GiftShopSale::default()).build_object_mapper().schema(),
-            DateTimeWrapper::new(membership::Membership::default()).build_object_mapper().schema(),
-            DateTimeWrapper::new(transaction_record::TransactionRecord::default()).build_object_mapper().schema(),
+            DateTimeWrapper::new(Admission::default()).build_object_mapper().schema(),
+            DateTimeWrapper::new(Donation::default()).build_object_mapper().schema(),
+            DateTimeWrapper::new(GiftShopSale::default()).build_object_mapper().schema(),
+            DateTimeWrapper::new(Membership::default()).build_object_mapper().schema(),
+            DateTimeWrapper::new(TransactionRecord::default()).build_object_mapper().schema(),
         ];
         
         println!("Creating database objects");
         connection.execute(defaults.iter().join("\n")).expect("Unable to create database.")
     }
     
-    pub fn insert<T: CanBuildObjectMapper>(&self, object: DateTimeWrapper<T>) -> anyhow::Result<()> {
-        Ok(self.database.execute(object.build_object_mapper().insert())?)
+    pub fn insert<T: CanBuildObjectMapper>(&mut self, object: DateTimeWrapper<T>) -> anyhow::Result<()> {
+        let res = Ok(self.database.execute(object.build_object_mapper().insert())?);
+
+        //todo: This is horribly inefficient, I should just be inserting where it makes sense.
+        self.read_entire_day();
+        res
     }
     
     pub fn select<T: FromSql>(&self, table_name: impl AsRef<str>, since: Duration) -> Result<Vec<T>, anyhow::Error> {

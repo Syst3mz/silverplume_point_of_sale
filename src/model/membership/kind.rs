@@ -1,17 +1,18 @@
-use strum::{Display, VariantArray};
+use sqlite::Value;
+use strum::{Display, EnumString, VariantArray};
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy, Default, VariantArray, Display)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Default, VariantArray, Display, EnumString)]
 pub enum Kind {
     #[default]
-    #[strum(serialize = "Family - $40.00")]
+    #[strum(serialize = "Family")]
     Family,
-    #[strum(serialize = "Individual - $25.00")]
+    #[strum(serialize = "Individual")]
     Individual,
-    #[strum(serialize = "Senior Family (60+) - $15.00")]
+    #[strum(serialize = "Senior Family (60+)")]
     SeniorFamily,
-    #[strum(serialize = "Senior Individual (60+) - $25.00")]
+    #[strum(serialize = "Senior Individual (60+)")]
     SeniorIndividual,
-    #[strum(serialize = "Life Member - $750.00")]
+    #[strum(serialize = "Life Member")]
     LifetimeMember
 }
 
@@ -24,5 +25,23 @@ impl Kind {
             Kind::SeniorIndividual => 25.0,
             Kind::LifetimeMember => 750.0,
         }
+    }
+}
+
+impl TryFrom<&Value> for Kind {
+    type Error = sqlite::Error;
+
+    fn try_from(value: &Value) -> Result<Self, Self::Error> {
+        let Value::String(value) = value else {
+            return Err(sqlite::Error {
+                code: None,
+                message: Some("Value is not a string, and must be.".to_string()),
+            })
+        };
+
+        Kind::try_from(value.as_str()).map_err(|_| sqlite::Error {
+            code: None,
+            message: Some("Unable to convert string to membership kind.".to_string()),
+        })
     }
 }

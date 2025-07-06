@@ -1,8 +1,9 @@
+use sqlite::Row;
 use crate::database::database_object::CanBuildObjectMapper;
+use crate::database::from_sql::FromSql;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
-use crate::model::donation::Donation;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -47,13 +48,33 @@ impl AsTransactionRecord for GiftShopSale {
 }
 impl WrapInDateTime for GiftShopSale {}
 impl CanBuildObjectMapper for GiftShopSale {
+    const TABLE_NAME: &'static str = "gift_shop_sales";
+
     fn build_object_mapper(&self) -> ObjectMapper {
-        ObjectMapper::new("gift_shop_sales")
+        ObjectMapper::new(Self::TABLE_NAME)
             .add_field("item_description", self.item_description.clone())
             .add_field("price", self.price)
             .add_field("payment_method", self.payment_method.clone())
             .add_field("quantity", self.quantity as i32)
             .add_field("sales_tax", self.sales_tax)
+    }
+}
+
+impl FromSql for GiftShopSale {
+    fn from_sql(row: Row) -> anyhow::Result<Self>
+    where
+        Self: Sized
+    {
+        let price: f64 = row.try_read("price")?;
+        let quantity: i64 = row.try_read("quantity")?;
+        let sales_tax: f64 = row.try_read("sales_tax")?;
+        Ok(Self {
+            item_description: row.try_read::<&str, _>("item_description")?.to_string(),
+            price: price as f32,
+            payment_method: row.try_read("payment_method")?,
+            quantity: quantity as u16,
+            sales_tax: sales_tax as f32,
+        })
     }
 }
 impl Default for GiftShopSale {
