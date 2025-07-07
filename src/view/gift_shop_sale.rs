@@ -48,6 +48,11 @@ impl GiftShopSale {
             Message::SalesTaxChanged(p) => self.sales_tax.update(p),
         }
     }
+
+    fn compute_total_cost(&self) -> f32 {
+        let tax_factor = (self.sales_tax.value() / 100.0) + 1.0;
+        self.price.value() * (self.quantity as f32) * tax_factor
+    }
     
     pub fn view(&self) -> Element<Message> {
         iced::widget::column![
@@ -58,7 +63,7 @@ impl GiftShopSale {
             pick_list(PaymentMethod::VARIANTS, self.payment_method.as_ref(), Message::PaymentMethodChanged).placeholder("Select Payment Method"),
             row![text("Quantity: ").size(TEXT_SIZE), number_input(&self.quantity, 1..=u16::MAX, Message::QuantityChanged)].spacing(RULE_HEIGHT),
             self.sales_tax.view().map(|x| Message::SalesTaxChanged(x)),
-            text(format!("Total due: ${:.2}", self.price.value() * (self.quantity as f32))).size(TEXT_SIZE),
+            text(format!("Total due: ${:.2}", self.compute_total_cost())).size(TEXT_SIZE),
         ].spacing(RULE_HEIGHT).into()
     }
 
@@ -75,7 +80,7 @@ impl ToModel for GiftShopSale {
             Self::ModelType::new(
                 self.item_description.clone(), 
                 self.price.value(), 
-                self.payment_method.ok_or(anyhow!("Missing payment method"))?, 
+                self.payment_method.ok_or(anyhow!("Missing payment method"))?,
                 self.quantity, 
                 self.sales_tax.value()
             )

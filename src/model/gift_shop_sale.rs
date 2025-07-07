@@ -103,6 +103,6 @@ impl HasPaymentMethod for GiftShopSale {
 
 impl Display for GiftShopSale {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Gift Shop Sale: {} {}", &self.item_description[0..10], self.total_cost())
+        write!(f, "Gift Shop Sale: {} ${:.2}", &self.item_description[0..self.item_description.len().min(10)], self.total_cost())
     }
 }

@@ -50,7 +50,7 @@ impl SummaryDicts {
                 ("Total Donations", ff("$", database.daily_donations().total_cost())),
                 ("Membership Sales", ff("$",database.daily_memberships().total_cost())),
                 ("Gift Shop Sales", ff("$",database.daily_gift_shop_sales().total_cost())),
-                ("Sales Tax Collected", format!("${:.2}", database.daily_gift_shop_sales().iter().map(|x| x.compute_tax()).sum::<f32>())),
+                ("Sales Tax Collected", ff("$", database.daily_gift_shop_sales().iter().map(|x| x.compute_tax()).sum::<f32>())),
                 ("Total Daily Revenue", ff("$", database.daily_transactions().total_cost())),
             ]),
             payments: IndexMap::from([

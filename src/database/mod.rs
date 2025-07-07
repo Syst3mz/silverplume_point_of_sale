@@ -138,6 +138,3 @@ impl Database {
         templates.get_template("summary").unwrap().render(&context).unwrap()
     }
 }
-
-
-

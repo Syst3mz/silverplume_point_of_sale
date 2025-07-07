@@ -13,7 +13,9 @@ pub enum Kind {
     #[strum(serialize = "Child (Under 6)")]
     ChildUnderSix,
     #[strum(serialize = "PFSP Member")]
-    PfspMember
+    PfspMember,
+    #[strum(serialize = "Silver Plume Resident")]
+    Resident
 }
 
 impl Kind {
@@ -26,7 +28,7 @@ impl Kind {
             Kind::Adult => 8.0,
             Kind::Senior => 5.0,
             Kind::ChildUnderThirteen => 3.0,
-            Kind::ChildUnderSix | Kind::PfspMember => 0.0
+            Kind::ChildUnderSix | Kind::PfspMember | Kind::Resident => 0.0,
         }
     }
 }
@@ -56,7 +58,8 @@ impl AsDescription for Kind {
             Kind::Senior => "Adult - $5.00",
             Kind::ChildUnderThirteen => "Child (6-12) - $3.00",
             Kind::ChildUnderSix => "Child (Under 6) - Free",
-            Kind::PfspMember => "PFSP Member - Free"
+            Kind::PfspMember => "PFSP Member - Free",
+            Kind::Resident => "Resident - Free",
         }
     }
 }
