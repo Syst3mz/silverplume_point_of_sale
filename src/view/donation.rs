@@ -1,15 +1,12 @@
 use iced::Element;
-use iced::widget::{horizontal_rule, pick_list, text};
-use serde::{Deserialize, Serialize};
-use strum::VariantArray;
-use crate::as_transaction_record::AsTransactionRecord;
-use crate::payment_method::PaymentMethod;
-use crate::{HEADER_SIZE, RULE_HEIGHT};
 use crate::decimal_input::DecimalInput;
-use crate::get_payment_method::GetPaymentMethod;
-use crate::transaction_record::{TransactionKind, TransactionRecord};
+use crate::model::payment_method::PaymentMethod;
+use iced::widget::{horizontal_rule, pick_list, text};
+use strum::VariantArray;
+use crate::{HEADER_SIZE, RULE_HEIGHT};
+use crate::to_model::ToModel;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Donation {
     pub payment_method: Option<PaymentMethod>,
     price: DecimalInput,
@@ -28,7 +25,7 @@ impl Donation {
             Message::Price(p) => self.price.update(p),
         }
     }
-    
+
     pub fn view(&self) -> Element<Message> {
         iced::widget::column![
             text("Donations").size(HEADER_SIZE),
@@ -37,9 +34,9 @@ impl Donation {
             pick_list(PaymentMethod::VARIANTS, self.payment_method, Message::SetPaymentMethod).placeholder("Select Payment Method"),
         ].spacing(RULE_HEIGHT).into()
     }
-    
-    pub fn amount(&self) -> f32 {
-        self.price.value()
+
+    pub(crate) fn is_valid(&self) -> bool {
+        self.payment_method.is_some()
     }
 }
 
@@ -52,24 +49,13 @@ impl Default for Donation {
     }
 }
 
-impl AsTransactionRecord for Donation {
-    fn as_transaction_record(&self) -> TransactionRecord {
-        assert!(self.is_valid());
-        TransactionRecord::new(
-            TransactionKind::Donation,
-            "Donation".to_string(),
-            1,
-            self.price.value(),
-        )
-    }
+impl ToModel for Donation {
+    type ModelType = crate::model::donation::Donation;
 
-    fn is_valid(&self) -> bool {
-        self.payment_method.is_some()
-    }
-}
-
-impl GetPaymentMethod for Donation {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
-        self.payment_method.clone()
+    fn to_model(&self) -> anyhow::Result<Self::ModelType> {
+        Ok(Self::ModelType {
+            payment_method: self.payment_method.unwrap(),
+            price: self.price.value(),
+        })
     }
 }
