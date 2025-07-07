@@ -57,18 +57,6 @@ impl Admission {
         ).into()
     }
 
-    pub fn matches_admission_type(&self, kind: Kind) -> bool {
-        let Some(self_type) = self.kind.as_ref() else {
-            return false;
-        };
-
-        *self_type == kind
-    }
-
-    pub fn compute_total_cost(&self) -> f32 {
-        self.quantity as f32 * self.kind.map(|kind| kind.cost()).unwrap_or(0.0)
-    }
-
     pub(crate) fn is_valid(&self) -> bool {
         let payment_ok = if self.needs_payment() { self.payment_method.is_some() } else { true };
         self.kind.is_some() && payment_ok && self.quantity > 0

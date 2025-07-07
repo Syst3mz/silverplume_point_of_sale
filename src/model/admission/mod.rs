@@ -8,7 +8,8 @@ use crate::database::object_mapper::ObjectMapper;
 use crate::model::admission::kind::Kind;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
-use crate::model::get_payment_method::GetPaymentMethod;
+use crate::model::has_payment_method::HasPaymentMethod;
+use crate::model::has_total_cost::HasTotalCost;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -27,15 +28,10 @@ impl Admission {
             quantity,
         }
     }
-    pub fn needs_payment(&self) -> bool {
-        !self.kind.is_free()
-    }
+}
 
-    pub fn matches_admission_type(&self, kind: Kind) -> bool {
-        self.kind == kind
-    }
-
-    pub fn compute_total_cost(&self) -> f32 {
+impl HasTotalCost for Admission {
+    fn total_cost(&self) -> f32 {
         self.quantity as f32 * self.kind.cost()
     }
 }
@@ -46,13 +42,13 @@ impl AsTransactionRecord for Admission {
             TransactionKind::Admission,
             self.kind.as_description().to_string(),
             self.quantity,
-            self.compute_total_cost()
+            self.total_cost()
         )
     }
 }
 
-impl GetPaymentMethod for Admission {
-    fn get_payment_method(&self) -> Option<PaymentMethod> {
+impl HasPaymentMethod for Admission {
+    fn payment_method(&self) -> Option<PaymentMethod> {
         self.payment_method.clone()
     }
 }

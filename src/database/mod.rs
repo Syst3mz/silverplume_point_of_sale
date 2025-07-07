@@ -47,15 +47,15 @@ impl Database {
     }
 
     fn read_entire_day(&mut self) {
-        let _ = self.select(<Admission as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<Admission as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_admissions = x);
-        let _ = self.select(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_memberships = x);
-        let _ = self.select(<Donation as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<Donation as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_donations = x);
-        let _ = self.select(<GiftShopSale as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<GiftShopSale as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_gift_shop_sales = x);
-        let _ = self.select(<TransactionRecord as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<TransactionRecord as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_transactions = x);
     }
     fn create_schemas(connection: &Connection) {
@@ -79,7 +79,7 @@ impl Database {
         res
     }
     
-    pub fn select<T: FromSql>(&self, table_name: impl AsRef<str>, since: Duration) -> Result<Vec<T>, anyhow::Error> {
+    pub fn select_since<T: FromSql>(&self, table_name: impl AsRef<str>, since: Duration) -> Result<Vec<T>, anyhow::Error> {
         let duration = Local::now() - since;
         let table_name = table_name.as_ref();
         let response = self.database.prepare(format!("SELECT * FROM {table_name} WHERE date_time >:max_age"))?;
@@ -93,6 +93,22 @@ impl Database {
             .filter_map(|x| x.ok())
             .map(|x| T::from_sql(x))
         )
+    }
+
+    pub fn daily_admissions(&self) -> &Vec<Admission> {
+        &self.daily_admissions
+    }
+    pub fn daily_memberships(&self) -> &Vec<Membership> {
+        &self.daily_memberships
+    }
+    pub fn daily_donations(&self) -> &Vec<Donation> {
+        &self.daily_donations
+    }
+    pub fn daily_gift_shop_sales(&self) -> &Vec<GiftShopSale> {
+        &self.daily_gift_shop_sales
+    }
+    pub fn daily_transactions(&self) -> &Vec<TransactionRecord> {
+        &self.daily_transactions
     }
 }
 

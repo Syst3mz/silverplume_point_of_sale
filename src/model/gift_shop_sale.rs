@@ -4,6 +4,8 @@ use crate::database::from_sql::FromSql;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::has_payment_method::HasPaymentMethod;
+use crate::model::has_total_cost::HasTotalCost;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -32,9 +34,6 @@ impl GiftShopSale {
     pub fn compute_tax(&self) -> f32 {
         self.pre_tax_cost() * (self.sales_tax / 100.0)
     }
-    pub fn compute_total_cost(&self) -> f32 {
-         self.pre_tax_cost() + self.compute_tax()
-    }
 }
 impl AsTransactionRecord for GiftShopSale {
     fn as_transaction_record(&self) -> TransactionRecord {
@@ -42,7 +41,7 @@ impl AsTransactionRecord for GiftShopSale {
             TransactionKind::GiftShopSale,
             self.item_description.clone(),
             self.quantity,
-            self.compute_total_cost(),
+            self.total_cost(),
         )
     }
 }
@@ -86,5 +85,17 @@ impl Default for GiftShopSale {
             quantity: 0,
             sales_tax: 0.0,
         }
+    }
+}
+
+impl HasTotalCost for GiftShopSale {
+    fn total_cost(&self) -> f32 {
+        self.pre_tax_cost() + self.compute_tax()
+    }
+}
+
+impl HasPaymentMethod for GiftShopSale {
+    fn payment_method(&self) -> Option<PaymentMethod> {
+        Some(self.payment_method)
     }
 }

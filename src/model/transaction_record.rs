@@ -1,4 +1,3 @@
-use std::hash::Hash;
 use sqlite::{Row, Value};
 use strum::{Display, EnumString};
 use crate::database::database_object::CanBuildObjectMapper;
@@ -7,6 +6,7 @@ use crate::database::has_schema::{HasSchema, NOT_NULL};
 use crate::database::object_mapper::ObjectMapper;
 use crate::database::to_sql::ToSql;
 use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::has_total_cost::HasTotalCost;
 
 #[derive(Eq, PartialEq, Debug, Clone, Copy, Default, Display, EnumString)]
 pub enum TransactionKind {
@@ -107,3 +107,8 @@ impl Default for TransactionRecord {
     }
 }
 impl WrapInDateTime for TransactionRecord {}
+impl HasTotalCost for TransactionRecord {
+    fn total_cost(&self) -> f32 {
+        self.total_cost
+    }
+}

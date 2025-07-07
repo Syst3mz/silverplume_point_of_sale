@@ -4,7 +4,8 @@ use crate::database::from_sql::FromSql;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
-use crate::model::donation::Donation;
+use crate::model::has_payment_method::HasPaymentMethod;
+use crate::model::has_total_cost::HasTotalCost;
 use crate::model::membership::kind::Kind;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
@@ -29,10 +30,6 @@ impl Membership {
     pub fn matches_type(&self, kind: Kind) -> bool {
         self.kind == kind
     }
-    
-    pub fn compute_total_cost(&self) -> f32 {
-        self.quantity as f32 * self.kind.price()
-    }
 }
 
 impl AsTransactionRecord for Membership {
@@ -41,7 +38,7 @@ impl AsTransactionRecord for Membership {
             TransactionKind::Membership,
             self.kind.to_string(),
             self.quantity,
-            self.compute_total_cost()
+            self.total_cost()
         )
     }
 }
@@ -78,5 +75,17 @@ impl Default for Membership {
             payment_method: Default::default(),
             quantity: 0,
         }
+    }
+}
+
+impl HasTotalCost for Membership {
+    fn total_cost(&self) -> f32 {
+        self.quantity as f32 * self.kind.price()
+    }
+}
+
+impl HasPaymentMethod for Membership {
+    fn payment_method(&self) -> Option<PaymentMethod> {
+        Some(self.payment_method)
     }
 }

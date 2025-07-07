@@ -1,15 +1,19 @@
-use chrono::Duration;
 use iced::advanced::Widget;
 use iced::alignment::Horizontal;
 use iced::Element;
-use iced::widget::{button, container, horizontal_rule, scrollable, text};
+use iced::widget::{container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
 use crate::database::Database;
 use crate::database::database_object::CanBuildObjectMapper;
+use crate::model::admission::Admission;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::has_payment_method::HasPaymentMethod;
+use crate::model::has_total_cost::HasTotalCost;
+use crate::model::payment_method::PaymentMethod;
 use crate::sale_screen::SaleScreen;
 use crate::to_model::ToModel;
+use crate::model::membership::Membership;
 
 pub struct App {
     sale_screen: SaleScreen,
@@ -21,7 +25,6 @@ type SaleMessage = crate::sale_screen::Message;
 #[derive(Debug, Clone)]
 pub enum Message {
     SaleMessage(SaleMessage),
-    DoTheSelect
 }
 
 impl App {    
@@ -57,12 +60,6 @@ impl App {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::SaleMessage(s) => self.handle_sale_message(s),
-            Message::DoTheSelect => {
-                let admissions_today: Vec<crate::model::admission::Admission> = self.database.select("admissions", Duration::days(1)).expect("Unable to read database");
-                for admission in admissions_today {
-                    println!("{:?}", admission);
-                }
-            }
         }
     }
 
@@ -101,63 +98,103 @@ impl App {
             grid
         ].padding(RULE_HEIGHT).align_x(Horizontal::Center).into()
     }
-    
+
+    fn total_money_by_payment_method(&self, payment_method: PaymentMethod) -> f32 {
+        let mut total = 0.0;
+        self.database.daily_admissions().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
+            total += x.total_cost()
+        });
+
+        self.database.daily_memberships().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
+            total += x.total_cost()
+        });
+
+        self.database.daily_gift_shop_sales().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
+            total += x.total_cost()
+        });
+
+        self.database.daily_donations().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
+            total += x.total_cost()
+        });
+
+        total
+    }
 
     fn summary(&self) -> Element<Message> {
-        /*type T = TransactionKind;
-        type At = crate::admission::kind::Kind;
-        type Mk = crate::membership::kind::Kind;
-        type Pm = PaymentMethod;*/
+        type At = crate::model::admission::kind::Kind;
+        type Mk = crate::model::membership::kind::Kind;
+        type Pm = PaymentMethod;
+        use crate::model::has_total_cost::HasTotalCost;
+
+        fn ff(prefix: impl AsRef<str>, float: f32) -> String {
+            let prefix = prefix.as_ref();
+            if (0.0 - float).abs() < 0.000001 {
+                format!("{prefix}0")
+            } else {
+                format!("{prefix}{:.2}", float)
+            }
+        }
+
+        fn filter_by_payment_and_sum<'a, T>(iter: impl IntoIterator<Item=&'a T>, method: Pm) -> f32 where
+        T: HasPaymentMethod+HasTotalCost + 'a
+        {
+            iter.into_iter()
+                .filter(|x| x.matches_payment_method(method))
+                .map(|x| x.total_cost())
+                .sum()
+        }
+
+        fn sum_over_admission_kind(admissions: &Vec<Admission>, kind: At) -> u32 {
+            admissions.into_iter().filter_map(|x| (x.kind == kind).then_some(x.quantity as u32)).sum()
+        }
+
+        fn sum_over_membership_sale(memberships: &Vec<Membership>, kind: Mk) -> u32 {
+            memberships.into_iter().filter_map(|x| x.matches_type(kind).then_some(x.quantity as u32)).sum()
+        }
+
+
         iced::widget::column![
-            /*self.summary_row("Daily Summary", [
-                ("Total Attendance", self.database.todays_transactions_of_kind(T::Admission).map(|x| x.quantity as u32).sum::<u32>().to_string()),
-                ("Admissions Revenue", self.sum_todays_transactions_of_kind(T::Admission)),
-                ("Total Donations", self.sum_todays_transactions_of_kind(T::Donation)),
-                ("Membership Sales", self.sum_todays_transactions_of_kind(T::Membership)),
-                ("Gift Shop Sales", self.sum_todays_transactions_of_kind(T::GiftShopSale)),
-                ("Sales Tax Collected", format!("${:.2}", self.database.gift_shop_sales.iter().filter(|x| (now - x.date()) <= Duration::days(1)).map(|x| x.compute_tax()).sum::<f32>())),
-                ("Total Daily Revenue", format!("${:.2}", self.database.todays_transactions().map(|x| x.total_cost).sum::<f32>())),
+            self.summary_row("Daily Summary", [
+                ("Total Attendance", self.database.daily_admissions().iter().map(|x| x.quantity as u32).sum::<u32>().to_string()),
+                ("Admissions Revenue", ff("$", self.database.daily_admissions().total_cost())),
+                ("Total Donations", ff("$",self.database.daily_donations().total_cost())),
+                ("Membership Sales", ff("$",self.database.daily_memberships().total_cost())),
+                ("Gift Shop Sales", ff("$",self.database.daily_gift_shop_sales().total_cost())),
+                ("Sales Tax Collected", format!("${:.2}", self.database.daily_gift_shop_sales().iter().map(|x| x.compute_tax()).sum::<f32>())),
+                ("Total Daily Revenue", ff("$", self.database.daily_transactions().total_cost())),
             ]),
-            self.summary_row("Monthly Payments Breakdown", [
-                ("Cash - Admissions", format!("${:.2}", Self::filter_by_payment_method(&self.database.admissions, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
-                ("Credit Card - Admissions", format!("${:.2}", Self::filter_by_payment_method(&self.database.admissions, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>().to_string())),
-                ("Free - Admissions", self.database.admissions.iter().filter(|x| !x.needs_payment()).count().to_string()),
-                ("Cash - Donations", format!("${:.2}", Self::filter_by_payment_method(&self.database.donations, Pm::Cash).map(|x| x.amount()).sum::<f32>())),
-                ("Credit Card - Donations", format!("${:.2}", Self::filter_by_payment_method(&self.database.donations, Pm::CreditCard).map(|x| x.amount()).sum::<f32>())),
-                ("Cash - Memberships", format!("${:.2}", Self::filter_by_payment_method(&self.database.memberships, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
-                ("Credit Card - Memberships", format!("${:.2}", Self::filter_by_payment_method(&self.database.memberships, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>())),
-                ("Cash - Shop Sales", format!("${:.2}", Self::filter_by_payment_method(&self.database.gift_shop_sales, Pm::Cash).map(|x| x.compute_total_cost()).sum::<f32>())),
-                ("Credit Card - Shop Sales", format!("${:.2}", Self::filter_by_payment_method(&self.database.gift_shop_sales, Pm::CreditCard).map(|x| x.compute_total_cost()).sum::<f32>())),
-                ("Total Cash", self.total_by_payment_method(PaymentMethod::Cash)),
-                ("Total Credit Card", self.total_by_payment_method(PaymentMethod::CreditCard)),
+            self.summary_row("Daily Payments Breakdown", [
+                ("Cash - Admissions", ff("$", filter_by_payment_and_sum(self.database.daily_admissions(), Pm::Cash))),
+                ("Credit Card - Admissions", ff("$", filter_by_payment_and_sum(self.database.daily_admissions(), Pm::CreditCard))),
+                ("Free - Admissions", self.database.daily_admissions().len().to_string()),
+                ("Cash - Donations", ff("$", filter_by_payment_and_sum(self.database.daily_donations(), Pm::Cash))),
+                ("Credit Card - Donations", ff("$", filter_by_payment_and_sum(self.database.daily_donations(), Pm::CreditCard))),
+                ("Cash - Memberships", ff("$", filter_by_payment_and_sum(self.database.daily_memberships(), Pm::Cash))),
+                ("Credit Card - Memberships", ff("$", filter_by_payment_and_sum(self.database.daily_memberships(), Pm::CreditCard))),
+                ("Cash - Shop Sales", ff("$", filter_by_payment_and_sum(self.database.daily_gift_shop_sales(), Pm::Cash))),
+                ("Credit Card - Shop Sales", ff("$", filter_by_payment_and_sum(self.database.daily_gift_shop_sales(), Pm::CreditCard))),
+                ("Total Cash", ff("$", self.total_money_by_payment_method(Pm::Cash))),
+                ("Total Credit Card", ff("$", self.total_money_by_payment_method(Pm::CreditCard))),
             ]),
-            self.summary_row("Monthly Admission Breakdown", [
-                ("Adults", self.sum_admission_type(At::Adult)),
-                ("Seniors", self.sum_admission_type(At::Adult)),
-                ("Children (6-12)", self.sum_admission_type(At::ChildUnderThirteen)),
-                ("Children (Under 6)", self.sum_admission_type(At::ChildUnderSix)),
-                ("PFSP Members", self.sum_admission_type(At::PfspMember)),
+            self.summary_row("Daily Admission Breakdown", [
+                ("Adults", sum_over_admission_kind(self.database.daily_admissions(), At::Adult).to_string()),
+                ("Seniors", sum_over_admission_kind(self.database.daily_admissions(), At::Senior).to_string()),
+                ("Children (6-12)", sum_over_admission_kind(self.database.daily_admissions(), At::ChildUnderThirteen).to_string()),
+                ("Children (Under 6)", sum_over_admission_kind(self.database.daily_admissions(), At::ChildUnderSix).to_string()),
+                ("PFSP Members", sum_over_admission_kind(self.database.daily_admissions(), At::PfspMember).to_string()),
             ]),
-            self.summary_row("Monthly Membership Sales Breakdown", [
-                ("Family", self.sum_membership_sales_type(Mk::Family)),
-                ("Individual", self.sum_membership_sales_type(Mk::Individual)),
-                ("Senior Family", self.sum_membership_sales_type(Mk::SeniorFamily)),
-                ("Senior Individual", self.sum_membership_sales_type(Mk::SeniorIndividual)),
-                ("Lifetime Member", self.sum_membership_sales_type(Mk::LifetimeMember)),
+            self.summary_row("Daily Membership Sales Breakdown", [
+                ("Family", sum_over_membership_sale(self.database.daily_memberships(), Mk::Family).to_string()),
+                ("Individual", sum_over_membership_sale(self.database.daily_memberships(), Mk::Individual).to_string()),
+                ("Senior Family", sum_over_membership_sale(self.database.daily_memberships(), Mk::SeniorFamily).to_string()),
+                ("Senior Individual", sum_over_membership_sale(self.database.daily_memberships(), Mk::SeniorIndividual).to_string()),
+                ("Lifetime Member", sum_over_membership_sale(self.database.daily_memberships(), Mk::LifetimeMember).to_string()),
             ]),
-            self.summary_row("Monthly Admission Breakdown", [
-                ("11-12pm", self.sum_hourly_attendance(Hour::ElevenToTwelve)),
-                ("12-1pm", self.sum_hourly_attendance(Hour::TwelveToOne)),
-                ("1-2pm", self.sum_hourly_attendance(Hour::OneToTwo)),
-                ("2-3pm", self.sum_hourly_attendance(Hour::TwoToThree)),
-                ("3-4pm", self.sum_hourly_attendance(Hour::ThreeToFour)),
-            ])*/
         ].spacing(RULE_HEIGHT).into()
     }
 
     pub fn view(&self) -> Element<Message> {
         scrollable(iced::widget::column![
-            button("Do The Select!").on_press(Message::DoTheSelect),
             self.sale_screen.view().map(Message::SaleMessage),
             self.summary(),
 

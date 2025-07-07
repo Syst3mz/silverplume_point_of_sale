@@ -41,10 +41,6 @@ impl Membership {
         ].spacing(RULE_HEIGHT).into()
     }
 
-    pub fn matches_type(&self, kind: Kind) -> bool {
-        self.kind == Some(kind)
-    }
-
     pub fn compute_total_cost(&self) -> f32 {
         self.quantity as f32 * self.kind.map(|x| x.price()).unwrap_or(-1.0)
     }

@@ -4,6 +4,8 @@ use crate::database::from_sql::FromSql;
 use crate::database::object_mapper::ObjectMapper;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
+use crate::model::has_payment_method::HasPaymentMethod;
+use crate::model::has_total_cost::HasTotalCost;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
@@ -55,5 +57,16 @@ impl Default for Donation {
             payment_method: Default::default(),
             price: 0.0,
         }
+    }
+}
+impl HasTotalCost for Donation {
+    fn total_cost(&self) -> f32 {
+        self.price
+    }
+}
+
+impl HasPaymentMethod for Donation {
+    fn payment_method(&self) -> Option<PaymentMethod> {
+        Some(self.payment_method)
     }
 }
