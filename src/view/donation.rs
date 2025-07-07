@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use iced::Element;
 use crate::decimal_input::DecimalInput;
 use crate::model::payment_method::PaymentMethod;
@@ -54,7 +55,7 @@ impl ToModel for Donation {
 
     fn to_model(&self) -> anyhow::Result<Self::ModelType> {
         Ok(Self::ModelType {
-            payment_method: self.payment_method.unwrap(),
+            payment_method: self.payment_method.ok_or(anyhow!("Donation is missing it's payment method!"))?,
             price: self.price.value(),
         })
     }

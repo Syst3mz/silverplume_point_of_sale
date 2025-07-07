@@ -1,4 +1,4 @@
-
+use anyhow::anyhow;
 use iced::Element;
 use iced::widget::{pick_list, row, text, text_input};
 use iced_aw::number_input;
@@ -75,7 +75,7 @@ impl ToModel for GiftShopSale {
             Self::ModelType::new(
                 self.item_description.clone(), 
                 self.price.value(), 
-                self.payment_method.unwrap(), 
+                self.payment_method.ok_or(anyhow!("Missing payment method"))?, 
                 self.quantity, 
                 self.sales_tax.value()
             )

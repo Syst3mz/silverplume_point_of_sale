@@ -1,3 +1,5 @@
+use std::any;
+use std::any::Any;
 use chrono::{Duration, Local};
 use itertools::Itertools;
 use log::{error, info};
@@ -53,9 +55,8 @@ impl Database {
     fn read_entire_day(&mut self) {
         let _ = self.select_since(<Admission as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_admissions = x).map_err(|x| {error!("err reading admissions: {}", x); x});
-        let p = self.select_since(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+        let _ = self.select_since(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_memberships = x).map_err(|x| {error!("err reading memberships: {}", x); x});
-        p.expect("reading admissions failed");
         let _ = self.select_since(<Donation as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
             .map(|x| self.daily_donations = x).map_err(|x| {error!("err reading donations{}", x); x});
         let _ = self.select_since(<GiftShopSale as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
@@ -76,7 +77,8 @@ impl Database {
         connection.execute(defaults.iter().join("\n")).expect("Unable to create database.")
     }
     
-    pub fn insert<T: CanBuildObjectMapper>(&mut self, object: DateTimeWrapper<T>) -> anyhow::Result<()> {
+    pub fn insert<T: CanBuildObjectMapper+Any>(&mut self, object: DateTimeWrapper<T>) -> anyhow::Result<()> {
+        info!("Logging a {}", any::type_name::<T>());
         let res = Ok(self.database.execute(object.build_object_mapper().insert())?);
 
         //todo: This is horribly inefficient, I should just be inserting where it makes sense.

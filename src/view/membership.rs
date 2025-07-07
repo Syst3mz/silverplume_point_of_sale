@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use iced::Element;
 use iced::widget::{pick_list, row, text};
 use iced_aw::number_input;
@@ -77,6 +78,9 @@ impl AsTransactionRecord for Membership {
 impl ToModel for Membership {
     type ModelType = crate::model::membership::Membership;
     fn to_model(&self) -> anyhow::Result<Self::ModelType> {
-        Ok(Self::ModelType::new(self.kind.unwrap(), self.payment_method.unwrap(), self.quantity))
+        Ok(Self::ModelType::new(
+            self.kind.ok_or(anyhow!("membership kind is none, but cannot be!"))?,
+            self.payment_method.ok_or(anyhow!("membership payment method is none, but cannot be!"))?,
+            self.quantity))
     }
 }

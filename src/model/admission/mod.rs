@@ -1,5 +1,6 @@
 pub mod kind;
 
+use std::fmt::Display;
 use sqlite::Row;
 use crate::as_description::AsDescription;
 use crate::database::database_object::CanBuildObjectMapper;
@@ -13,7 +14,7 @@ use crate::model::has_total_cost::HasTotalCost;
 use crate::model::payment_method::PaymentMethod;
 use crate::model::transaction_record::{TransactionKind, TransactionRecord};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Admission {
     pub kind: Kind,
     payment_method: Option<PaymentMethod>,
@@ -84,5 +85,11 @@ impl Default for Admission {
             payment_method: None,
             quantity: 0,
         }
+    }
+}
+
+impl Display for Admission {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Admission for {} {}", self.quantity, self.kind)
     }
 }

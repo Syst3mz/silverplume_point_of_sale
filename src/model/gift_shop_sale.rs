@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use sqlite::Row;
 use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::from_sql::FromSql;
@@ -97,5 +98,11 @@ impl HasTotalCost for GiftShopSale {
 impl HasPaymentMethod for GiftShopSale {
     fn payment_method(&self) -> Option<PaymentMethod> {
         Some(self.payment_method)
+    }
+}
+
+impl Display for GiftShopSale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Gift Shop Sale: {} {}", &self.item_description[0..10], self.total_cost())
     }
 }

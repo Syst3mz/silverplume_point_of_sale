@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use iced::Element;
 use iced::widget::{container, pick_list, row, text};
 use iced_aw::number_input;
@@ -77,6 +78,10 @@ impl ToModel for Admission {
     type ModelType = crate::model::admission::Admission;
 
     fn to_model(&self) -> anyhow::Result<Self::ModelType> {
-        Ok(Self::ModelType::new(self.kind.unwrap(), self.payment_method, self.quantity))
+        Ok(Self::ModelType::new(
+            self.kind.ok_or(anyhow!("Admission kind is none, but cannot be!"))?, 
+            self.payment_method, 
+            self.quantity
+        ))
     }
 }

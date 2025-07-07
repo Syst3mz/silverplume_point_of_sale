@@ -9,6 +9,7 @@ pub mod gift_shop_sale;
 pub mod admission;
 pub mod transaction_record;
 pub mod membership;
-mod hour;
+pub mod hour;
 pub(crate) mod has_total_cost;
 pub mod has_payment_method;
+pub mod cart_item;
