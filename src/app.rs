@@ -185,9 +185,9 @@ self.transactionify_and_insert(self.sale_screen.gift_shop_sale().clone())
                     text("Cart").size(HEADER_SIZE),
                     selection_list(&self.stringified_cart, |x, _| {CartSelection(x)}).height(400),
                     iced::widget::row![
+                        text(format!("Amount Due: {}", self.cost_of_cart())).size(TEXT_SIZE),
                         button("Remove").on_press_maybe(self.selected_index.map(|_| DeleteSelected)),
                         button("Commit").on_press(CommitToDb),
-                        text(format!("Total Amount Due: {}", self.cost_of_cart())).size(TEXT_SIZE)
                     ].spacing(RULE_HEIGHT)
                 ].padding(RULE_HEIGHT as f32).spacing(RULE_HEIGHT).width(Length::FillPortion(1)),
                 container(self.sale_screen.view().map(Message::SaleMessage)).width(Length::FillPortion(2))
