@@ -1,5 +1,6 @@
 use chrono::{Duration, Local};
 use itertools::Itertools;
+use log::{error, info};
 use minijinja::Environment;
 use serde::Serialize;
 use sqlite::{Connection, Value};
@@ -51,15 +52,16 @@ impl Database {
 
     fn read_entire_day(&mut self) {
         let _ = self.select_since(<Admission as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
-            .map(|x| self.daily_admissions = x);
-        let _ = self.select_since(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
-            .map(|x| self.daily_memberships = x);
+            .map(|x| self.daily_admissions = x).map_err(|x| {error!("err reading admissions: {}", x); x});
+        let p = self.select_since(<Membership as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
+            .map(|x| self.daily_memberships = x).map_err(|x| {error!("err reading memberships: {}", x); x});
+        p.expect("reading admissions failed");
         let _ = self.select_since(<Donation as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
-            .map(|x| self.daily_donations = x);
+            .map(|x| self.daily_donations = x).map_err(|x| {error!("err reading donations{}", x); x});
         let _ = self.select_since(<GiftShopSale as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
-            .map(|x| self.daily_gift_shop_sales = x);
+            .map(|x| self.daily_gift_shop_sales = x).map_err(|x| {error!("err reading gift shop sales: {}", x); x});
         let _ = self.select_since(<TransactionRecord as CanBuildObjectMapper>::TABLE_NAME, Duration::days(1))
-            .map(|x| self.daily_transactions = x);
+            .map(|x| self.daily_transactions = x).map_err(|x| {error!("err reading transactions: {}", x); x});
     }
     fn create_schemas(connection: &Connection) {
         let defaults = [
@@ -70,7 +72,7 @@ impl Database {
             DateTimeWrapper::new(TransactionRecord::default()).build_object_mapper().schema(),
         ];
         
-        println!("Creating database objects");
+        info!("Creating schemas");
         connection.execute(defaults.iter().join("\n")).expect("Unable to create database.")
     }
     

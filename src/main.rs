@@ -13,6 +13,7 @@ pub const TEXT_SIZE: u16 = 18;
 pub const RULE_HEIGHT: u16 = 8;
 
 fn main() -> iced::Result {
+    env_logger::init();
     iced::application(
         "Museum Point Of Sale",
         App::update,
