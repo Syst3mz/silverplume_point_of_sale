@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{frequency}} POS Summary</title>
+</head>
+<body>
+<h1>Daily Summary</h1>
+{% for key in fields.summary %}
+<p> {{key}}: {{fields.summary[key]}} </p>
+{% endfor %}
+
+<h1>Daily Payments Breakdown</h1>
+{% for key in fields.payments %}
+<p> {{key}}: {{fields.payments[key]}} </p>
+{% endfor %}
+
+<h1>Daily Admission Breakdown</h1>
+{% for key in fields.admissions %}
+<p> {{key}}: {{fields.admissions[key]}} </p>
+{% endfor %}
+
+<h1>Daily Membership Sales Breakdown</h1>
+{% for key in fields.memberships %}
+<p> {{key}}: {{fields.memberships[key]}} </p>
+{% endfor %}
+
+</body>
+</html>

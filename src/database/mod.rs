@@ -1,5 +1,7 @@
 use chrono::{Duration, Local};
 use itertools::Itertools;
+use minijinja::Environment;
+use serde::Serialize;
 use sqlite::{Connection, Value};
 use crate::database::database_object::CanBuildObjectMapper;
 use crate::database::from_sql::FromSql;
@@ -10,6 +12,7 @@ use crate::model::donation::Donation;
 use crate::model::gift_shop_sale::GiftShopSale;
 use crate::model::membership::Membership;
 use crate::model::transaction_record::TransactionRecord;
+use crate::view::summary_dicts::SummaryDicts;
 
 pub mod has_schema;
 pub mod object_mapper;
@@ -78,7 +81,7 @@ impl Database {
         self.read_entire_day();
         res
     }
-    
+
     pub fn select_since<T: FromSql>(&self, table_name: impl AsRef<str>, since: Duration) -> Result<Vec<T>, anyhow::Error> {
         let duration = Local::now() - since;
         let table_name = table_name.as_ref();
@@ -86,7 +89,7 @@ impl Database {
         let binding: &[(&'static str, Value)] = &[
             (":max_age", duration.to_sql().into())
         ];
-        
+
         Result::from_iter(response
             .into_iter()
             .bind(binding)?
@@ -109,6 +112,26 @@ impl Database {
     }
     pub fn daily_transactions(&self) -> &Vec<TransactionRecord> {
         &self.daily_transactions
+    }
+    pub fn render_to_html(&self) -> String {
+        const TEMPLATE_STR: &'static str = include_str!("../summary.html");
+
+        let mut templates = Environment::new();
+       templates.add_template("summary", TEMPLATE_STR).unwrap();
+        #[derive(Serialize)]
+        struct Context {
+            frequency: String,
+            fields: SummaryDicts,
+        }
+
+
+        let context = Context {
+            frequency: "Daily".to_string(),
+            fields: SummaryDicts::new(self)
+        };
+
+
+        templates.get_template("summary").unwrap().render(&context).unwrap()
     }
 }
 
