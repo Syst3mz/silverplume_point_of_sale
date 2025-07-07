@@ -1,19 +1,17 @@
+use chrono::{Datelike, Local};
 use iced::advanced::Widget;
 use iced::alignment::Horizontal;
 use iced::Element;
-use iced::widget::{container, horizontal_rule, scrollable, text};
+use iced::widget::{button, container, horizontal_rule, scrollable, text};
 use crate::{HEADER_SIZE, RULE_HEIGHT, TEXT_SIZE};
+use crate::app::Message::RenderDailyReport;
 use crate::database::Database;
 use crate::database::database_object::CanBuildObjectMapper;
-use crate::model::admission::Admission;
 use crate::model::as_transaction_record::AsTransactionRecord;
 use crate::model::date_time_wrapper::WrapInDateTime;
-use crate::model::has_payment_method::HasPaymentMethod;
-use crate::model::has_total_cost::HasTotalCost;
-use crate::model::payment_method::PaymentMethod;
 use crate::sale_screen::SaleScreen;
 use crate::to_model::ToModel;
-use crate::model::membership::Membership;
+use crate::view::summary_dicts::SummaryDicts;
 
 pub struct App {
     sale_screen: SaleScreen,
@@ -25,6 +23,7 @@ type SaleMessage = crate::sale_screen::Message;
 #[derive(Debug, Clone)]
 pub enum Message {
     SaleMessage(SaleMessage),
+    RenderDailyReport
 }
 
 impl App {    
@@ -60,6 +59,13 @@ impl App {
     pub fn update(&mut self, message: Message) {
         match message {
             Message::SaleMessage(s) => self.handle_sale_message(s),
+            Message::RenderDailyReport => {
+                let now = Local::now();
+                let _ =std::fs::write(
+                    format!("{}{}{}_report.html", now.year(), now.month(), now.day()),
+                    self.database.render_to_html()
+                );
+            }
         }
     }
 
@@ -99,97 +105,15 @@ impl App {
         ].padding(RULE_HEIGHT).align_x(Horizontal::Center).into()
     }
 
-    fn total_money_by_payment_method(&self, payment_method: PaymentMethod) -> f32 {
-        let mut total = 0.0;
-        self.database.daily_admissions().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
-            total += x.total_cost()
-        });
-
-        self.database.daily_memberships().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
-            total += x.total_cost()
-        });
-
-        self.database.daily_gift_shop_sales().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
-            total += x.total_cost()
-        });
-
-        self.database.daily_donations().iter().filter(|x| x.matches_payment_method(payment_method)).for_each(|x| {
-            total += x.total_cost()
-        });
-
-        total
-    }
-
     fn summary(&self) -> Element<Message> {
-        type At = crate::model::admission::kind::Kind;
-        type Mk = crate::model::membership::kind::Kind;
-        type Pm = PaymentMethod;
-        use crate::model::has_total_cost::HasTotalCost;
-
-        fn ff(prefix: impl AsRef<str>, float: f32) -> String {
-            let prefix = prefix.as_ref();
-            if (0.0 - float).abs() < 0.000001 {
-                format!("{prefix}0")
-            } else {
-                format!("{prefix}{:.2}", float)
-            }
-        }
-
-        fn filter_by_payment_and_sum<'a, T>(iter: impl IntoIterator<Item=&'a T>, method: Pm) -> f32 where
-        T: HasPaymentMethod+HasTotalCost + 'a
-        {
-            iter.into_iter()
-                .filter(|x| x.matches_payment_method(method))
-                .map(|x| x.total_cost())
-                .sum()
-        }
-
-        fn sum_over_admission_kind(admissions: &Vec<Admission>, kind: At) -> u32 {
-            admissions.into_iter().filter_map(|x| (x.kind == kind).then_some(x.quantity as u32)).sum()
-        }
-
-        fn sum_over_membership_sale(memberships: &Vec<Membership>, kind: Mk) -> u32 {
-            memberships.into_iter().filter_map(|x| x.matches_type(kind).then_some(x.quantity as u32)).sum()
-        }
+        let summaries = SummaryDicts::new(&self.database);
 
 
         iced::widget::column![
-            self.summary_row("Daily Summary", [
-                ("Total Attendance", self.database.daily_admissions().iter().map(|x| x.quantity as u32).sum::<u32>().to_string()),
-                ("Admissions Revenue", ff("$", self.database.daily_admissions().total_cost())),
-                ("Total Donations", ff("$",self.database.daily_donations().total_cost())),
-                ("Membership Sales", ff("$",self.database.daily_memberships().total_cost())),
-                ("Gift Shop Sales", ff("$",self.database.daily_gift_shop_sales().total_cost())),
-                ("Sales Tax Collected", format!("${:.2}", self.database.daily_gift_shop_sales().iter().map(|x| x.compute_tax()).sum::<f32>())),
-                ("Total Daily Revenue", ff("$", self.database.daily_transactions().total_cost())),
-            ]),
-            self.summary_row("Daily Payments Breakdown", [
-                ("Cash - Admissions", ff("$", filter_by_payment_and_sum(self.database.daily_admissions(), Pm::Cash))),
-                ("Credit Card - Admissions", ff("$", filter_by_payment_and_sum(self.database.daily_admissions(), Pm::CreditCard))),
-                ("Free - Admissions", self.database.daily_admissions().len().to_string()),
-                ("Cash - Donations", ff("$", filter_by_payment_and_sum(self.database.daily_donations(), Pm::Cash))),
-                ("Credit Card - Donations", ff("$", filter_by_payment_and_sum(self.database.daily_donations(), Pm::CreditCard))),
-                ("Cash - Memberships", ff("$", filter_by_payment_and_sum(self.database.daily_memberships(), Pm::Cash))),
-                ("Credit Card - Memberships", ff("$", filter_by_payment_and_sum(self.database.daily_memberships(), Pm::CreditCard))),
-                ("Cash - Shop Sales", ff("$", filter_by_payment_and_sum(self.database.daily_gift_shop_sales(), Pm::Cash))),
-                ("Credit Card - Shop Sales", ff("$", filter_by_payment_and_sum(self.database.daily_gift_shop_sales(), Pm::CreditCard))),
-                ("Total Cash", ff("$", self.total_money_by_payment_method(Pm::Cash))),
-                ("Total Credit Card", ff("$", self.total_money_by_payment_method(Pm::CreditCard))),
-            ]),
-            self.summary_row("Daily Admission Breakdown", [
-                ("Adults", sum_over_admission_kind(self.database.daily_admissions(), At::Adult).to_string()),
-                ("Seniors", sum_over_admission_kind(self.database.daily_admissions(), At::Senior).to_string()),
-                ("Children (6-12)", sum_over_admission_kind(self.database.daily_admissions(), At::ChildUnderThirteen).to_string()),
-                ("Children (Under 6)", sum_over_admission_kind(self.database.daily_admissions(), At::ChildUnderSix).to_string()),
-                ("PFSP Members", sum_over_admission_kind(self.database.daily_admissions(), At::PfspMember).to_string()),
-            ]),
-            self.summary_row("Daily Membership Sales Breakdown", [
-                ("Family", sum_over_membership_sale(self.database.daily_memberships(), Mk::Family).to_string()),
-                ("Individual", sum_over_membership_sale(self.database.daily_memberships(), Mk::Individual).to_string()),
-                ("Senior Family", sum_over_membership_sale(self.database.daily_memberships(), Mk::SeniorFamily).to_string()),
-                ("Senior Individual", sum_over_membership_sale(self.database.daily_memberships(), Mk::SeniorIndividual).to_string()),
-                ("Lifetime Member", sum_over_membership_sale(self.database.daily_memberships(), Mk::LifetimeMember).to_string()),
-            ]),
+            self.summary_row("Daily Summary", &summaries.summary),
+            self.summary_row("Daily Payments Breakdown", &summaries.payments),
+            self.summary_row("Daily Admission Breakdown", &summaries.admissions),
+            self.summary_row("Daily Membership Sales Breakdown", &summaries.memberships),
         ].spacing(RULE_HEIGHT).into()
     }
 
@@ -197,7 +121,7 @@ impl App {
         scrollable(iced::widget::column![
             self.sale_screen.view().map(Message::SaleMessage),
             self.summary(),
-
+            button("Export Daily Report").on_press(RenderDailyReport)
         ].spacing(2 * RULE_HEIGHT)).into()
 
     }
