@@ -51,7 +51,7 @@ impl CanBuildObjectMapper for Membership {
         ObjectMapper::new(Self::TABLE_NAME)
             .add_field("kind", self.kind.to_string())
             .add_field("payment_method", self.payment_method.to_string())
-            .add_field("quantity", self.quantity.to_string())
+            .add_field("quantity", self.quantity as i64)
     }
 }
 
